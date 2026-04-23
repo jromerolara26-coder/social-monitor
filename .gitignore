@@ -1,0 +1,8 @@
+envios.db
+datos_social_icetex.json
+reporte_social_icetex.html
+reporte_social_icetex.xlsx
+__pycache__/
+*.pyc
+.env
+envios/

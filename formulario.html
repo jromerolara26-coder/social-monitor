@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ingreso de datos — Social Monitor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px}
+a{color:#1976d2}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#0a4b8c,#1565c0 60%,#1976d2);color:#fff;
+  padding:20px 32px;display:flex;align-items:center;gap:16px;
+  box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.hdr h1{font-size:1.3rem;font-weight:800}
+.hdr p{font-size:.82rem;opacity:.85;margin-top:2px}
+.hdr-badge{margin-left:auto;background:rgba(255,255,255,.18);border-radius:8px;
+  padding:8px 16px;font-size:.8rem;text-align:center;line-height:1.8}
+
+/* LAYOUT */
+.main{max-width:860px;margin:0 auto;padding:24px 16px}
+.card{background:#fff;border-radius:14px;padding:22px 24px;
+  box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:20px}
+.sec{font-size:1rem;font-weight:800;color:#0a4b8c;margin-bottom:16px;
+  padding-bottom:8px;border-bottom:2px solid #e8f0fe}
+
+/* FORM ELEMENTS */
+label{display:block;font-size:.78rem;font-weight:700;color:#555;
+  text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+input,textarea,select{width:100%;border:1px solid #d0d9e8;border-radius:8px;
+  padding:9px 12px;font-size:.9rem;font-family:inherit;color:#222;
+  background:#fafbff;transition:border .15s}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#1976d2;
+  background:#fff;box-shadow:0 0 0 3px rgba(25,118,210,.1)}
+textarea{resize:vertical;min-height:60px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.field{margin-bottom:14px}
+.hint{font-size:.73rem;color:#888;margin-top:3px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:8px;
+  padding:9px 18px;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .18s}
+.btn-primary{background:#1976d2;color:#fff}
+.btn-primary:hover{background:#1565c0}
+.btn-success{background:#217346;color:#fff}
+.btn-success:hover{background:#185c37}
+.btn-danger{background:#e53935;color:#fff}
+.btn-danger:hover{background:#c62828}
+.btn-outline{background:#fff;color:#1976d2;border:2px solid #1976d2}
+.btn-outline:hover{background:#e8f0fe}
+.btn-sm{padding:5px 12px;font-size:.78rem}
+.btn-block{width:100%;justify-content:center;padding:12px}
+
+/* PLATAFORMA TABS */
+.tabs{display:flex;gap:8px;margin-bottom:20px}
+.tab{padding:9px 22px;border-radius:8px;border:2px solid #d0d9e8;
+  font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s;background:#fff}
+.tab.fb.active{background:#1877F2;color:#fff;border-color:#1877F2}
+.tab.ig.active{background:#C13584;color:#fff;border-color:#C13584}
+.tab:not(.active):hover{border-color:#1976d2;color:#1976d2}
+
+/* PUBLICACIONES */
+.pub-card{border:2px solid #e8f0fe;border-radius:12px;padding:18px;margin-bottom:16px;
+  position:relative}
+.pub-card .pub-num{font-size:.72rem;font-weight:800;color:#888;
+  text-transform:uppercase;margin-bottom:10px}
+.pub-remove{position:absolute;top:14px;right:14px}
+
+/* COMENTARIOS */
+.com-list{margin-top:14px}
+.com-card{background:#f8f9ff;border:1px solid #e0e8ff;border-radius:10px;
+  padding:14px;margin-bottom:10px;position:relative}
+.com-card .com-num{font-size:.7rem;font-weight:700;color:#1565c0;margin-bottom:8px}
+.com-remove{position:absolute;top:10px;right:10px}
+.resp-block{display:none;border-top:1px dashed #d0d9e8;margin-top:12px;padding-top:12px}
+.resp-block.show{display:block}
+.tiempo-badge{display:inline-block;margin-top:6px;padding:4px 10px;
+  border-radius:20px;font-size:.75rem;font-weight:700}
+.badge-ok{background:#e8f9ee;color:#217346}
+.badge-warn{background:#fff3e0;color:#e65100}
+.badge-no{background:#fce8e8;color:#c62828}
+
+/* SLA CONFIG */
+.sla-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sla-item{text-align:center;background:#f8f9ff;border-radius:10px;padding:12px}
+.sla-item label{text-align:center;font-size:.7rem}
+.sla-item input{text-align:center;font-weight:700;font-size:1rem;
+  border:none;background:transparent;padding:4px}
+.sla-item input:focus{outline:none;border-bottom:2px solid #1976d2;background:transparent;box-shadow:none}
+
+/* RESUMEN */
+#resumen{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;
+  padding:14px 18px;margin-bottom:16px;display:none;font-size:.85rem}
+#resumen strong{color:#2e7d32}
+
+/* FOOTER */
+.footer{text-align:center;color:#aaa;font-size:.75rem;padding:24px 0}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div>
+    <h1>Social Monitor — Ingreso de datos</h1>
+    <p>Ingresa tus publicaciones y comentarios. Al terminar descarga el JSON y envíalo al administrador.</p>
+  </div>
+  <div class="hdr-badge">
+    📋 Completa el formulario<br>
+    📥 Descarga tu JSON<br>
+    📤 Envíalo al encargado
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- DATOS DE CUENTA -->
+  <div class="card">
+    <div class="sec">👤 Datos de la cuenta</div>
+    <div class="grid2">
+      <div class="field">
+        <label>Nombre de la Página de Facebook</label>
+        <input id="fb_nombre" type="text" placeholder="Ej: MiEmpresaCol">
+      </div>
+      <div class="field">
+        <label>Usuario de Instagram (sin @)</label>
+        <input id="ig_nombre" type="text" placeholder="Ej: miempresa_col">
+      </div>
+    </div>
+    <div class="field">
+      <label>Responsable / Analista (opcional)</label>
+      <input id="analista" type="text" placeholder="Tu nombre o área">
+    </div>
+  </div>
+
+  <!-- CONFIGURACIÓN SLA -->
+  <div class="card">
+    <div class="sec">⏱️ Configuración de SLA (tiempo máximo de respuesta)</div>
+    <div class="sla-grid">
+      <div class="sla-item">
+        <label>📘 Facebook (horas)</label>
+        <input id="sla_fb" type="number" value="8" min="1" max="72">
+      </div>
+      <div class="sla-item">
+        <label>📸 Instagram (horas)</label>
+        <input id="sla_ig" type="number" value="12" min="1" max="72">
+      </div>
+      <div class="sla-item">
+        <label>🐦 Twitter/X (horas)</label>
+        <input id="sla_tw" type="number" value="4" min="1" max="72">
+      </div>
+    </div>
+  </div>
+
+  <!-- PLATAFORMA TABS -->
+  <div class="tabs">
+    <button class="tab fb active" onclick="cambiarPlat('facebook')">📘 Facebook</button>
+    <button class="tab ig" onclick="cambiarPlat('instagram')">📸 Instagram</button>
+  </div>
+
+  <!-- PUBLICACIONES -->
+  <div class="card">
+    <div class="sec" id="plat-titulo">📘 Publicaciones de Facebook</div>
+    <div id="pubs-container"></div>
+    <button class="btn btn-outline" onclick="agregarPublicacion()">＋ Agregar publicación</button>
+  </div>
+
+  <!-- RESUMEN -->
+  <div id="resumen"></div>
+
+  <!-- BOTÓN DESCARGAR -->
+  <button class="btn btn-success btn-block" onclick="descargarJSON()" style="font-size:1rem;padding:14px">
+    📥 Generar y Descargar JSON
+  </button>
+
+</div>
+
+<div class="footer">Social Monitor · Formulario de ingreso de datos · Sin conexión requerida</div>
+
+<script>
+// ── Estado global
+let platActual = 'facebook';
+let pubContadores = { facebook: 0, instagram: 0 };
+let datos = { twitter: [], facebook: [], instagram: [] };
+
+// ── Temas
+const TEMAS = {
+  'crédito / pago':           ['crédito','credito','préstamo','prestamo','cuota','pago','deuda','saldo','mora','cobro','factura','abono'],
+  'beca / condonación':       ['beca','condonación','condonacion','generación e','subsidio'],
+  'trámites / portal':        ['portal','trámite','tramite','solicitud','formulario','sistema','acceso','contraseña','login'],
+  'atención al cliente':      ['atención','atencion','servicio','demora','espera','chat','línea','linea','asesor'],
+  'requisitos / elegibilidad':['requisito','elegibilidad','aplica','puntaje','sisbén','sisben'],
+  'información general':      ['información','informacion','cómo','como','cuándo','cuando','dónde','donde'],
+  'reclamo / queja':          ['reclamo','queja','problema','error','mal','pésimo','pesimo','terrible','injusto'],
+  'posgrado / internacional': ['posgrado','maestría','maestria','doctorado','exterior','internacional'],
+};
+function clasificar(txt) {
+  const t = txt.toLowerCase();
+  for (const [tema, kws] of Object.entries(TEMAS))
+    if (kws.some(k => t.includes(k))) return tema;
+  return 'otro';
+}
+function evalCalidad(resp) {
+  if (!resp) return { score:0, nivel:'Sin respuesta', motivo:'No hubo respuesta' };
+  const w = resp.trim().split(/\s+/).length;
+  if (w >= 25) return { score:3, nivel:'Específica',  motivo:'Respuesta detallada' };
+  if (w >= 10) return { score:2, nivel:'Parcial',     motivo:'Respuesta presente' };
+  return        { score:1, nivel:'Genérica',    motivo:'Respuesta muy corta' };
+}
+
+// ── Parsear fecha local → ISO
+function parseFecha(str) {
+  if (!str) return null;
+  // datetime-local entrega  YYYY-MM-DDTHH:MM
+  return new Date(str).toISOString();
+}
+function diffMinutos(f1, f2) {
+  const d = (new Date(f2) - new Date(f1)) / 60000;
+  return d < 0 ? Math.abs(d) : d;
+}
+function fmtTiempo(min) {
+  if (min === null || min === undefined) return '';
+  const h = Math.floor(min / 60), m = Math.round(min % 60);
+  return h > 0 ? `${h}h ${m}min` : `${m}min`;
+}
+
+// ── Cambiar plataforma
+function cambiarPlat(plat) {
+  platActual = plat;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab.${plat === 'facebook' ? 'fb' : 'ig'}`).classList.add('active');
+  document.getElementById('plat-titulo').textContent =
+    plat === 'facebook' ? '📘 Publicaciones de Facebook' : '📸 Publicaciones de Instagram';
+  renderPublicaciones();
+}
+
+// ── Publicaciones
+function agregarPublicacion() {
+  pubContadores[platActual]++;
+  const id = `${platActual}_${pubContadores[platActual]}`;
+  if (!datos[platActual]) datos[platActual] = [];
+  datos[platActual].push({ _id: id, texto:'', fecha:'', likes:0, shares:0, url:'', comentarios:[] });
+  renderPublicaciones();
+}
+function eliminarPublicacion(id) {
+  datos[platActual] = datos[platActual].filter(p => p._id !== id);
+  renderPublicaciones();
+}
+
+function renderPublicaciones() {
+  const c = document.getElementById('pubs-container');
+  const pubs = datos[platActual] || [];
+  if (pubs.length === 0) {
+    c.innerHTML = '<p style="color:#aaa;padding:8px 0">Aún no hay publicaciones. Haz clic en "Agregar publicación".</p>';
+    return;
+  }
+  c.innerHTML = pubs.map((p, i) => `
+    <div class="pub-card" id="pc_${p._id}">
+      <div class="pub-num">Publicación ${i+1}</div>
+      <button class="btn btn-danger btn-sm pub-remove" onclick="eliminarPublicacion('${p._id}')">✕ Eliminar</button>
+
+      <div class="field">
+        <label>Texto / Descripción del post</label>
+        <textarea rows="2" placeholder="Copia aquí el texto de la publicación"
+          onchange="setField('${p._id}','texto',this.value)">${p.texto}</textarea>
+      </div>
+      <div class="grid3">
+        <div class="field">
+          <label>Fecha y hora del post</label>
+          <input type="datetime-local" value="${p.fecha}"
+            onchange="setField('${p._id}','fecha',this.value)">
+        </div>
+        <div class="field">
+          <label>Likes / Reacciones</label>
+          <input type="number" min="0" value="${p.likes}"
+            onchange="setField('${p._id}','likes',+this.value)">
+        </div>
+        <div class="field">
+          <label>Compartidos</label>
+          <input type="number" min="0" value="${p.shares}"
+            onchange="setField('${p._id}','shares',+this.value)">
+        </div>
+      </div>
+      <div class="field">
+        <label>URL del post (opcional)</label>
+        <input type="url" placeholder="https://www.facebook.com/..." value="${p.url}"
+          onchange="setField('${p._id}','url',this.value)">
+      </div>
+
+      <div class="com-list" id="coms_${p._id}">
+        ${renderComentarios(p)}
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px"
+        onclick="agregarComentario('${p._id}')">＋ Agregar comentario</button>
+    </div>
+  `).join('');
+}
+
+function setField(pubId, campo, valor) {
+  const pub = datos[platActual].find(p => p._id === pubId);
+  if (pub) pub[campo] = valor;
+}
+
+// ── Comentarios
+function agregarComentario(pubId) {
+  const pub = datos[platActual].find(p => p._id === pubId);
+  if (!pub) return;
+  const cid = `${pubId}_c${pub.comentarios.length + 1}`;
+  pub.comentarios.push({ _cid: cid, usuario:'', texto:'', fecha:'', respondido:false,
+                          fecha_resp:'', texto_resp:'' });
+  document.getElementById(`coms_${pubId}`).innerHTML = renderComentarios(pub);
+}
+function eliminarComentario(pubId, cid) {
+  const pub = datos[platActual].find(p => p._id === pubId);
+  if (!pub) return;
+  pub.comentarios = pub.comentarios.filter(c => c._cid !== cid);
+  document.getElementById(`coms_${pubId}`).innerHTML = renderComentarios(pub);
+}
+
+function renderComentarios(pub) {
+  if (!pub.comentarios.length)
+    return '<p style="color:#aaa;font-size:.78rem;padding:4px 0">Sin comentarios aún.</p>';
+  return pub.comentarios.map((c, i) => {
+    const slaH = platActual === 'facebook'
+      ? +document.getElementById('sla_fb').value
+      : +document.getElementById('sla_ig').value;
+    let tiempoBadge = '';
+    if (c.respondido && c.fecha && c.fecha_resp) {
+      const min = diffMinutos(c.fecha, c.fecha_resp);
+      const cumple = min <= slaH * 60;
+      const cls = cumple ? 'badge-ok' : 'badge-warn';
+      tiempoBadge = `<span class="tiempo-badge ${cls}">⏱ ${fmtTiempo(min)} — ${cumple ? '✅ dentro del SLA' : '⚠️ fuera del SLA'}</span>`;
+    }
+    return `
+    <div class="com-card">
+      <div class="com-num">Comentario ${i+1}</div>
+      <button class="btn btn-danger btn-sm com-remove"
+        onclick="eliminarComentario('${pub._id}','${c._cid}')">✕</button>
+      <div class="grid2">
+        <div class="field">
+          <label>Usuario / Nombre</label>
+          <input type="text" placeholder="Nombre de quien comentó" value="${c.usuario}"
+            onchange="setComField('${pub._id}','${c._cid}','usuario',this.value)">
+        </div>
+        <div class="field">
+          <label>Fecha y hora del comentario</label>
+          <input type="datetime-local" value="${c.fecha}"
+            onchange="setComField('${pub._id}','${c._cid}','fecha',this.value);actualizarTiempo('${pub._id}','${c._cid}')">
+        </div>
+      </div>
+      <div class="field">
+        <label>Texto del comentario</label>
+        <textarea rows="2" placeholder="Copia aquí el comentario"
+          onchange="setComField('${pub._id}','${c._cid}','texto',this.value)">${c.texto}</textarea>
+      </div>
+      <div class="field">
+        <label>¿Respondiste este comentario?</label>
+        <select onchange="toggleResp('${pub._id}','${c._cid}',this.value)">
+          <option value="no" ${!c.respondido?'selected':''}>No</option>
+          <option value="si" ${c.respondido?'selected':''}>Sí</option>
+        </select>
+      </div>
+      <div class="resp-block ${c.respondido?'show':''}" id="resp_${c._cid}">
+        <div class="grid2">
+          <div class="field">
+            <label>Fecha y hora de tu respuesta</label>
+            <input type="datetime-local" value="${c.fecha_resp}"
+              onchange="setComField('${pub._id}','${c._cid}','fecha_resp',this.value);actualizarTiempo('${pub._id}','${c._cid}')">
+          </div>
+          <div class="field" style="align-self:end">
+            <div id="badge_${c._cid}">${tiempoBadge}</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Texto de tu respuesta</label>
+          <textarea rows="2" placeholder="Copia aquí tu respuesta"
+            onchange="setComField('${pub._id}','${c._cid}','texto_resp',this.value)">${c.texto_resp}</textarea>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setComField(pubId, cid, campo, valor) {
+  const pub = datos[platActual].find(p => p._id === pubId);
+  if (!pub) return;
+  const com = pub.comentarios.find(c => c._cid === cid);
+  if (com) com[campo] = valor;
+}
+function toggleResp(pubId, cid, val) {
+  setComField(pubId, cid, 'respondido', val === 'si');
+  const blk = document.getElementById(`resp_${cid}`);
+  if (blk) blk.classList.toggle('show', val === 'si');
+}
+function actualizarTiempo(pubId, cid) {
+  const pub = datos[platActual].find(p => p._id === pubId);
+  if (!pub) return;
+  const com = pub.comentarios.find(c => c._cid === cid);
+  if (!com || !com.fecha || !com.fecha_resp) return;
+  const slaH = platActual === 'facebook'
+    ? +document.getElementById('sla_fb').value
+    : +document.getElementById('sla_ig').value;
+  const min = diffMinutos(com.fecha, com.fecha_resp);
+  const cumple = min <= slaH * 60;
+  const cls = cumple ? 'badge-ok' : 'badge-warn';
+  const el = document.getElementById(`badge_${cid}`);
+  if (el) el.innerHTML = `<span class="tiempo-badge ${cls}">⏱ ${fmtTiempo(min)} — ${cumple?'✅ dentro del SLA':'⚠️ fuera del SLA'}</span>`;
+}
+
+// ── Generar JSON final
+function construirJSON() {
+  const sla = {
+    facebook:  +document.getElementById('sla_fb').value || 8,
+    instagram: +document.getElementById('sla_ig').value || 12,
+    twitter:   +document.getElementById('sla_tw').value || 4,
+  };
+  const resultado = { twitter:[], facebook:[], instagram:[] };
+
+  ['facebook','instagram'].forEach(plat => {
+    (datos[plat] || []).forEach((pub, pi) => {
+      const coms = (pub.comentarios || []).map(c => {
+        const respondido = !!c.respondido;
+        let t_resp = null, cumple = null;
+        if (respondido && c.fecha && c.fecha_resp) {
+          t_resp = Math.round(diffMinutos(c.fecha, c.fecha_resp) * 10) / 10;
+          cumple = t_resp <= sla[plat] * 60;
+        }
+        return {
+          usuario: c.usuario || 'Usuario',
+          texto:   c.texto   || '',
+          fecha:   parseFecha(c.fecha) || new Date().toISOString(),
+          respondido,
+          tiempo_respuesta_min: t_resp,
+          texto_respuesta:      respondido ? (c.texto_resp || '') : null,
+          tema:    clasificar(c.texto || ''),
+          calidad: evalCalidad(respondido ? (c.texto_resp || '') : ''),
+          cumple_sla: cumple,
+        };
+      });
+      const postId = `${plat.substring(0,2).toUpperCase()}_${String(pi+1).padStart(3,'0')}_${Date.now()}`;
+      resultado[plat].push({
+        id:            postId,
+        texto:         pub.texto || '(Sin texto)',
+        fecha:         parseFecha(pub.fecha) || new Date().toISOString(),
+        likes:         pub.likes  || 0,
+        shares:        pub.shares || 0,
+        replies_total: coms.length,
+        comentarios:   coms,
+        url:           pub.url || `https://www.${plat}.com/${plat==='facebook'?document.getElementById('fb_nombre').value:document.getElementById('ig_nombre').value}`,
+      });
+    });
+  });
+  return { resultado, sla };
+}
+
+function descargarJSON() {
+  const { resultado, sla } = construirJSON();
+  const total = resultado.facebook.length + resultado.instagram.length;
+  if (total === 0) {
+    alert('⚠️ No hay publicaciones ingresadas. Agrega al menos una publicación antes de descargar.');
+    return;
+  }
+
+  // Metadata
+  const meta = {
+    _meta: {
+      analista:    document.getElementById('analista').value || 'Sin nombre',
+      fb_cuenta:   document.getElementById('fb_nombre').value,
+      ig_cuenta:   document.getElementById('ig_nombre').value,
+      sla,
+      generado:    new Date().toISOString(),
+    }
+  };
+  const final = Object.assign({}, meta, resultado);
+
+  const blob = new Blob([JSON.stringify(final, null, 2)], { type:'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const nombre = (document.getElementById('analista').value || 'datos').replace(/\s+/g,'_').toLowerCase();
+  a.href     = url;
+  a.download = `datos_${nombre}_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  // Resumen
+  let totalComs = 0, totalResp = 0;
+  ['facebook','instagram'].forEach(p => resultado[p].forEach(pub => {
+    pub.comentarios.forEach(c => { totalComs++; if(c.respondido) totalResp++; });
+  }));
+  const res = document.getElementById('resumen');
+  res.style.display = 'block';
+  res.innerHTML = `✅ <strong>JSON descargado correctamente</strong><br>
+    📌 ${total} publicaciones &nbsp;·&nbsp; 💬 ${totalComs} comentarios &nbsp;·&nbsp;
+    ✉️ ${totalResp} respondidos &nbsp;·&nbsp;
+    📤 <strong>Envía el archivo al encargado del reporte.</strong>`;
+}
+
+// Init
+renderPublicaciones();
+</script>
+</body>
+</html>

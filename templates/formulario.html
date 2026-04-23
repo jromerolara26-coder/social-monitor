@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ingreso de datos — Social Monitor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px}
+.hdr{background:linear-gradient(135deg,#0a4b8c,#1565c0 60%,#1976d2);color:#fff;
+  padding:18px 28px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.hdr h1{font-size:1.2rem;font-weight:800}
+.hdr p{font-size:.8rem;opacity:.85;margin-top:3px}
+.main{max-width:820px;margin:0 auto;padding:20px 14px}
+.card{background:#fff;border-radius:12px;padding:20px 22px;box-shadow:0 2px 10px rgba(0,0,0,.07);margin-bottom:18px}
+.sec{font-size:.95rem;font-weight:800;color:#0a4b8c;margin-bottom:14px;padding-bottom:7px;border-bottom:2px solid #e8f0fe}
+label{display:block;font-size:.73rem;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+input,textarea,select{width:100%;border:1px solid #d0d9e8;border-radius:7px;padding:8px 11px;font-size:.88rem;font-family:inherit;color:#222;background:#fafbff}
+input:focus,textarea:focus,select:focus{outline:none;border-color:#1976d2;box-shadow:0 0 0 3px rgba(25,118,210,.1)}
+textarea{resize:vertical;min-height:55px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.f{margin-bottom:12px}
+.btn{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:7px;padding:8px 16px;font-size:.83rem;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-p{background:#1976d2;color:#fff}.btn-p:hover{background:#1565c0}
+.btn-s{background:#217346;color:#fff}.btn-s:hover{background:#185c37}
+.btn-d{background:#e53935;color:#fff}.btn-d:hover{background:#c62828}
+.btn-o{background:#fff;color:#1976d2;border:2px solid #1976d2}.btn-o:hover{background:#e8f0fe}
+.btn-sm{padding:4px 11px;font-size:.75rem}
+.btn-bl{width:100%;justify-content:center;padding:13px;font-size:.95rem}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{padding:8px 20px;border-radius:7px;border:2px solid #d0d9e8;font-weight:700;font-size:.83rem;cursor:pointer;background:#fff}
+.tab.fb.on{background:#1877F2;color:#fff;border-color:#1877F2}
+.tab.ig.on{background:#C13584;color:#fff;border-color:#C13584}
+.tab:not(.on):hover{border-color:#1976d2;color:#1976d2}
+.pub{border:2px solid #e8f0fe;border-radius:10px;padding:16px;margin-bottom:14px;position:relative}
+.pub-n{font-size:.7rem;font-weight:800;color:#888;text-transform:uppercase;margin-bottom:8px}
+.pr{position:absolute;top:12px;right:12px}
+.com{background:#f8f9ff;border:1px solid #e0e8ff;border-radius:9px;padding:12px;margin-bottom:9px;position:relative}
+.com-n{font-size:.68rem;font-weight:700;color:#1565c0;margin-bottom:7px}
+.cr{position:absolute;top:8px;right:8px}
+.rb{display:none;border-top:1px dashed #d0d9e8;margin-top:10px;padding-top:10px}
+.rb.on{display:block}
+.tbadge{display:inline-block;margin-top:5px;padding:3px 9px;border-radius:16px;font-size:.72rem;font-weight:700}
+.tok{background:#e8f9ee;color:#217346}.twarn{background:#fff3e0;color:#e65100}
+.sla-g{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sla-i{text-align:center;background:#f8f9ff;border-radius:9px;padding:10px}
+.sla-i label{text-align:center;font-size:.68rem}
+.sla-i input{text-align:center;font-weight:700;font-size:.95rem;border:none;background:transparent;padding:3px}
+.sla-i input:focus{outline:none;border-bottom:2px solid #1976d2;background:transparent;box-shadow:none}
+#msg{border-radius:9px;padding:12px 16px;margin-bottom:14px;display:none;font-size:.85rem}
+.msg-ok{background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32}
+.msg-err{background:#fce8e8;border:1px solid #ef9a9a;color:#c62828}
+@media(max-width:600px){.g2,.g3{grid-template-columns:1fr}.sla-g{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <h1>📋 Social Monitor — Ingreso de datos</h1>
+  <p>Completa el formulario con tus publicaciones y comentarios, luego haz clic en Enviar.</p>
+</header>
+
+<div class="main">
+  <div id="msg"></div>
+
+  <div class="card">
+    <div class="sec">👤 Datos del analista</div>
+    <div class="g2">
+      <div class="f"><label>Tu nombre / área</label>
+        <input id="analista" type="text" placeholder="Ej: Equipo Community Manager"></div>
+      <div class="f"><label>Página de Facebook</label>
+        <input id="fb_nombre" type="text" placeholder="Nombre de la página"></div>
+    </div>
+    <div class="f"><label>Usuario de Instagram (sin @)</label>
+      <input id="ig_nombre" type="text" placeholder="usuario_instagram"></div>
+  </div>
+
+  <div class="card">
+    <div class="sec">⏱️ SLA — Tiempo máximo de respuesta</div>
+    <div class="sla-g">
+      <div class="sla-i"><label>📘 Facebook (horas)</label>
+        <input id="sla_fb" type="number" value="{{ sla.facebook }}" min="1"></div>
+      <div class="sla-i"><label>📸 Instagram (horas)</label>
+        <input id="sla_ig" type="number" value="{{ sla.instagram }}" min="1"></div>
+      <div class="sla-i"><label>🐦 Twitter (horas)</label>
+        <input id="sla_tw" type="number" value="{{ sla.twitter }}" min="1"></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab fb on" onclick="cambiarPlat('facebook')">📘 Facebook</button>
+    <button class="tab ig"    onclick="cambiarPlat('instagram')">📸 Instagram</button>
+  </div>
+
+  <div class="card">
+    <div class="sec" id="plat-titulo">📘 Publicaciones de Facebook</div>
+    <div id="pubs"></div>
+    <button class="btn btn-o" onclick="addPub()">＋ Agregar publicación</button>
+  </div>
+
+  <button class="btn btn-s btn-bl" onclick="enviar()">📤 Enviar datos al servidor</button>
+</div>
+
+<script>
+let plat = 'facebook';
+let cnt  = {facebook:0, instagram:0};
+let data = {twitter:[], facebook:[], instagram:[]};
+
+const TEMAS = {
+  'crédito / pago':['crédito','credito','cuota','pago','deuda','mora','cobro'],
+  'beca / condonación':['beca','condonación','condonacion','subsidio'],
+  'trámites / portal':['portal','trámite','tramite','solicitud','sistema'],
+  'atención al cliente':['atención','atencion','servicio','demora','espera','chat'],
+  'reclamo / queja':['reclamo','queja','problema','error','terrible','injusto'],
+  'posgrado / internacional':['posgrado','maestría','maestria','exterior','internacional'],
+};
+function tema(txt){
+  const t=txt.toLowerCase();
+  for(const[k,v] of Object.entries(TEMAS)) if(v.some(w=>t.includes(w))) return k;
+  return 'otro';
+}
+function calidad(resp){
+  if(!resp) return {score:0,nivel:'Sin respuesta',motivo:'No hubo respuesta'};
+  const w=resp.trim().split(/\s+/).length;
+  if(w>=25) return {score:3,nivel:'Específica',motivo:'Respuesta detallada'};
+  if(w>=10) return {score:2,nivel:'Parcial',motivo:'Respuesta presente'};
+  return {score:1,nivel:'Genérica',motivo:'Respuesta muy corta'};
+}
+function diffMin(a,b){return Math.abs((new Date(b)-new Date(a))/60000);}
+function fmtT(m){if(!m&&m!==0)return '';const h=Math.floor(m/60),mm=Math.round(m%60);return h?`${h}h ${mm}min`:`${mm}min`;}
+
+function cambiarPlat(p){
+  plat=p;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelector(`.tab.${p==='facebook'?'fb':'ig'}`).classList.add('on');
+  document.getElementById('plat-titulo').textContent=p==='facebook'?'📘 Publicaciones de Facebook':'📸 Publicaciones de Instagram';
+  renderPubs();
+}
+
+function addPub(){
+  cnt[plat]++;
+  data[plat].push({_id:`${plat}_${cnt[plat]}`,texto:'',fecha:'',likes:0,shares:0,url:'',comentarios:[]});
+  renderPubs();
+}
+function delPub(id){data[plat]=data[plat].filter(p=>p._id!==id);renderPubs();}
+
+function renderPubs(){
+  const el=document.getElementById('pubs');
+  const pubs=data[plat]||[];
+  if(!pubs.length){el.innerHTML='<p style="color:#aaa;padding:6px 0">Sin publicaciones. Haz clic en Agregar publicación.</p>';return;}
+  el.innerHTML=pubs.map((p,i)=>`
+    <div class="pub">
+      <div class="pub-n">Publicación ${i+1}</div>
+      <button class="btn btn-d btn-sm pr" onclick="delPub('${p._id}')">✕ Eliminar</button>
+      <div class="f"><label>Texto del post</label>
+        <textarea onchange="sf('${p._id}','texto',this.value)">${p.texto}</textarea></div>
+      <div class="g3">
+        <div class="f"><label>Fecha y hora del post</label>
+          <input type="datetime-local" value="${p.fecha}" onchange="sf('${p._id}','fecha',this.value)"></div>
+        <div class="f"><label>Likes / Reacciones</label>
+          <input type="number" min="0" value="${p.likes}" onchange="sf('${p._id}','likes',+this.value)"></div>
+        <div class="f"><label>Compartidos</label>
+          <input type="number" min="0" value="${p.shares}" onchange="sf('${p._id}','shares',+this.value)"></div>
+      </div>
+      <div class="f"><label>URL del post (opcional)</label>
+        <input type="url" value="${p.url}" placeholder="https://..." onchange="sf('${p._id}','url',this.value)"></div>
+      <div id="coms_${p._id}">${renderComs(p)}</div>
+      <button class="btn btn-o btn-sm" style="margin-top:7px" onclick="addCom('${p._id}')">＋ Agregar comentario</button>
+    </div>`).join('');
+}
+
+function sf(pid,k,v){const p=data[plat].find(x=>x._id===pid);if(p)p[k]=v;}
+
+function renderComs(p){
+  if(!p.comentarios.length) return '<p style="color:#aaa;font-size:.76rem;padding:4px 0">Sin comentarios aún.</p>';
+  const slaH=plat==='facebook'?+document.getElementById('sla_fb').value:+document.getElementById('sla_ig').value;
+  return p.comentarios.map((c,i)=>{
+    let badge='';
+    if(c.respondido&&c.fecha&&c.fecha_resp){
+      const m=diffMin(c.fecha,c.fecha_resp),ok=m<=slaH*60;
+      badge=`<span class="tbadge ${ok?'tok':'twarn'}">⏱ ${fmtT(m)} — ${ok?'✅ dentro del SLA':'⚠️ fuera del SLA'}</span>`;
+    }
+    return `<div class="com">
+      <div class="com-n">Comentario ${i+1}</div>
+      <button class="btn btn-d btn-sm cr" onclick="delCom('${p._id}','${c._cid}')">✕</button>
+      <div class="g2">
+        <div class="f"><label>Usuario / Nombre</label>
+          <input type="text" value="${c.usuario}" placeholder="Nombre de quien comentó" onchange="sc('${p._id}','${c._cid}','usuario',this.value)"></div>
+        <div class="f"><label>Fecha y hora del comentario</label>
+          <input type="datetime-local" value="${c.fecha}" onchange="sc('${p._id}','${c._cid}','fecha',this.value);updBadge('${p._id}','${c._cid}')"></div>
+      </div>
+      <div class="f"><label>Texto del comentario</label>
+        <textarea onchange="sc('${p._id}','${c._cid}','texto',this.value)">${c.texto}</textarea></div>
+      <div class="f"><label>¿Respondiste?</label>
+        <select onchange="togResp('${p._id}','${c._cid}',this.value)">
+          <option value="no" ${!c.respondido?'selected':''}>No</option>
+          <option value="si" ${c.respondido?'selected':''}>Sí</option>
+        </select></div>
+      <div class="rb ${c.respondido?'on':''}" id="rb_${c._cid}">
+        <div class="g2">
+          <div class="f"><label>Fecha y hora de tu respuesta</label>
+            <input type="datetime-local" value="${c.fecha_resp}" onchange="sc('${p._id}','${c._cid}','fecha_resp',this.value);updBadge('${p._id}','${c._cid}')"></div>
+          <div class="f" style="align-self:end"><div id="bdg_${c._cid}">${badge}</div></div>
+        </div>
+        <div class="f"><label>Texto de tu respuesta</label>
+          <textarea onchange="sc('${p._id}','${c._cid}','texto_resp',this.value)">${c.texto_resp}</textarea></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addCom(pid){
+  const p=data[plat].find(x=>x._id===pid);
+  if(!p)return;
+  p.comentarios.push({_cid:`${pid}_c${p.comentarios.length+1}`,usuario:'',texto:'',fecha:'',respondido:false,fecha_resp:'',texto_resp:''});
+  document.getElementById(`coms_${pid}`).innerHTML=renderComs(p);
+}
+function delCom(pid,cid){
+  const p=data[plat].find(x=>x._id===pid);
+  if(!p)return;
+  p.comentarios=p.comentarios.filter(c=>c._cid!==cid);
+  document.getElementById(`coms_${pid}`).innerHTML=renderComs(p);
+}
+function sc(pid,cid,k,v){
+  const p=data[plat].find(x=>x._id===pid);if(!p)return;
+  const c=p.comentarios.find(x=>x._cid===cid);if(c)c[k]=v;
+}
+function togResp(pid,cid,val){
+  sc(pid,cid,'respondido',val==='si');
+  const el=document.getElementById(`rb_${cid}`);
+  if(el)el.classList.toggle('on',val==='si');
+}
+function updBadge(pid,cid){
+  const p=data[plat].find(x=>x._id===pid);if(!p)return;
+  const c=p.comentarios.find(x=>x._cid===cid);if(!c||!c.fecha||!c.fecha_resp)return;
+  const slaH=plat==='facebook'?+document.getElementById('sla_fb').value:+document.getElementById('sla_ig').value;
+  const m=diffMin(c.fecha,c.fecha_resp),ok=m<=slaH*60;
+  const el=document.getElementById(`bdg_${cid}`);
+  if(el)el.innerHTML=`<span class="tbadge ${ok?'tok':'twarn'}">⏱ ${fmtT(m)} — ${ok?'✅ dentro del SLA':'⚠️ fuera del SLA'}</span>`;
+}
+
+function buildPayload(){
+  const sla={facebook:+document.getElementById('sla_fb').value||8,instagram:+document.getElementById('sla_ig').value||12,twitter:+document.getElementById('sla_tw').value||4};
+  const res={twitter:[],facebook:[],instagram:[]};
+  ['facebook','instagram'].forEach(p=>{
+    (data[p]||[]).forEach((pub,pi)=>{
+      const coms=(pub.comentarios||[]).map(c=>{
+        const resp=!!c.respondido;
+        let t=null,cumple=null;
+        if(resp&&c.fecha&&c.fecha_resp){t=Math.round(diffMin(c.fecha,c.fecha_resp)*10)/10;cumple=t<=sla[p]*60;}
+        return{usuario:c.usuario||'Usuario',texto:c.texto||'',fecha:c.fecha?new Date(c.fecha).toISOString():new Date().toISOString(),
+          respondido:resp,tiempo_respuesta_min:t,texto_respuesta:resp?(c.texto_resp||''):null,
+          tema:tema(c.texto||''),calidad:calidad(resp?(c.texto_resp||''):''),cumple_sla:cumple};
+      });
+      res[p].push({id:`${p.substring(0,2).toUpperCase()}_${String(pi+1).padStart(3,'0')}_${Date.now()}`,
+        texto:pub.texto||'(Sin texto)',fecha:pub.fecha?new Date(pub.fecha).toISOString():new Date().toISOString(),
+        likes:pub.likes||0,shares:pub.shares||0,replies_total:coms.length,comentarios:coms,
+        url:pub.url||`https://www.${p}.com/${p==='facebook'?document.getElementById('fb_nombre').value:document.getElementById('ig_nombre').value}`});
+    });
+  });
+  return{_meta:{analista:document.getElementById('analista').value||'Anónimo',
+    fb_cuenta:document.getElementById('fb_nombre').value,ig_cuenta:document.getElementById('ig_nombre').value,sla,
+    generado:new Date().toISOString()},...res};
+}
+
+function showMsg(txt,ok){
+  const el=document.getElementById('msg');
+  el.className=ok?'msg-ok':'msg-err';
+  el.textContent=txt;el.style.display='block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function enviar(){
+  const total=data.facebook.length+data.instagram.length;
+  if(total===0){showMsg('⚠️ No hay publicaciones ingresadas.',false);return;}
+  const payload=buildPayload();
+  try{
+    const r=await fetch('/enviar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(d.ok){
+      showMsg('✅ '+d.mensaje+' El administrador puede generar el reporte cuando todos hayan enviado.',true);
+      data={twitter:[],facebook:[],instagram:[]};cnt={facebook:0,instagram:0};
+      renderPubs();
+    } else showMsg('❌ '+d.mensaje,false);
+  } catch(e){showMsg('❌ Error de conexión: '+e.message,false);}
+}
+
+renderPubs();
+</script>
+</body>
+</html>

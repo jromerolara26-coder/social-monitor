@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin — Social Monitor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px}
+.hdr{background:linear-gradient(135deg,#0a4b8c,#1565c0 60%,#1976d2);color:#fff;
+  padding:18px 32px;display:flex;align-items:center;gap:16px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.hdr h1{font-size:1.2rem;font-weight:800}
+.hdr p{font-size:.8rem;opacity:.85;margin-top:2px}
+.hdr-links{margin-left:auto;display:flex;gap:10px}
+.hdr-links a{background:rgba(255,255,255,.18);border-radius:7px;padding:7px 14px;
+  color:#fff;font-size:.8rem;font-weight:700;text-decoration:none}
+.hdr-links a:hover{background:rgba(255,255,255,.3)}
+.main{max-width:1100px;margin:0 auto;padding:24px 16px}
+.card{background:#fff;border-radius:12px;padding:20px 24px;
+  box-shadow:0 2px 10px rgba(0,0,0,.07);margin-bottom:20px}
+.sec{font-size:.95rem;font-weight:800;color:#0a4b8c;margin-bottom:14px;
+  padding-bottom:7px;border-bottom:2px solid #e8f0fe}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+thead th{background:#f0f4ff;color:#0a4b8c;font-weight:700;padding:10px 12px;
+  text-align:left;border-bottom:2px solid #d0deff}
+tbody tr{border-bottom:1px solid #f0f0f0}
+tbody tr:hover{background:#f7f9ff}
+td{padding:9px 12px;vertical-align:middle}
+.btn{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:7px;
+  padding:8px 16px;font-size:.83rem;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-s{background:#217346;color:#fff}.btn-s:hover{background:#185c37}
+.btn-d{background:#e53935;color:#fff}.btn-d:hover{background:#c62828}
+.btn-p{background:#1976d2;color:#fff}.btn-p:hover{background:#1565c0}
+.btn-sm{padding:4px 10px;font-size:.75rem}
+.btn-bl{width:100%;justify-content:center;padding:13px;font-size:.95rem}
+.empty{text-align:center;color:#aaa;padding:32px}
+.badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.72rem;font-weight:700}
+.b-fb{background:#e8f0fe;color:#1877F2}
+.b-ig{background:#fce4ec;color:#C13584}
+#resultado{border-radius:9px;padding:14px 18px;margin-bottom:16px;display:none;font-size:.88rem}
+.r-ok{background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32}
+.r-err{background:#fce8e8;border:1px solid #ef9a9a;color:#c62828}
+.acciones{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#loader{display:none;font-size:.85rem;color:#1976d2;font-weight:700}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div>
+    <h1>⚙️ Panel de Administrador — Social Monitor</h1>
+    <p>Aquí ves todos los envíos del equipo y generas el reporte consolidado.</p>
+  </div>
+  <div class="hdr-links">
+    <a href="/formulario">📋 Formulario</a>
+    {% if reporte_existe %}<a href="/reporte" target="_blank">📊 Ver Reporte</a>{% endif %}
+  </div>
+</header>
+
+<div class="main">
+  <div id="resultado"></div>
+
+  <!-- ACCIONES -->
+  <div class="card">
+    <div class="sec">🚀 Generar reporte consolidado</div>
+    <p style="color:#555;font-size:.85rem;margin-bottom:14px">
+      Consolida todos los envíos recibidos y genera el reporte HTML y Excel con las gráficas.
+    </p>
+    <div class="acciones">
+      <button class="btn btn-s" onclick="generar()">📊 Generar reporte ahora</button>
+      {% if reporte_existe %}
+      <a href="/reporte" target="_blank" class="btn btn-p">👁️ Ver reporte</a>
+      <a href="/descargar-excel" class="btn btn-p">📥 Descargar Excel</a>
+      {% endif %}
+      <span id="loader">⏳ Generando reporte, espera...</span>
+    </div>
+  </div>
+
+  <!-- ENVÍOS -->
+  <div class="card">
+    <div class="sec">📥 Envíos recibidos ({{ envios|length }})</div>
+    {% if envios %}
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Analista</th>
+          <th>Facebook</th>
+          <th>Instagram</th>
+          <th>Posts FB</th>
+          <th>Posts IG</th>
+          <th>Comentarios</th>
+          <th>Fecha envío</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in envios %}
+        <tr>
+          <td>{{ e.id }}</td>
+          <td><strong>{{ e.analista }}</strong></td>
+          <td><span class="badge b-fb">{{ e.fb or '—' }}</span></td>
+          <td><span class="badge b-ig">{{ e.ig or '—' }}</span></td>
+          <td style="text-align:center">{{ e.n_fb }}</td>
+          <td style="text-align:center">{{ e.n_ig }}</td>
+          <td style="text-align:center">{{ e.coms }}</td>
+          <td style="color:#666">{{ e.fecha }}</td>
+          <td>
+            <form method="POST" action="/eliminar/{{ e.id }}"
+                  onsubmit="return confirm('¿Eliminar el envío de {{ e.analista }}?')">
+              <button class="btn btn-d btn-sm" type="submit">✕ Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">
+      📭 Aún no hay envíos.<br>
+      <span style="font-size:.83rem">Comparte la URL del formulario con tu equipo:<br>
+      <strong style="color:#1976d2">/formulario</strong></span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+async function generar(){
+  const btn=document.querySelector('.btn-s');
+  const loader=document.getElementById('loader');
+  btn.disabled=true; loader.style.display='inline';
+  try{
+    const r=await fetch('/generar',{method:'POST'});
+    const d=await r.json();
+    const el=document.getElementById('resultado');
+    el.className=d.ok?'r-ok':'r-err';
+    el.textContent=(d.ok?'✅ ':'❌ ')+d.mensaje;
+    el.style.display='block';
+    if(d.ok) setTimeout(()=>location.reload(),1500);
+  } catch(e){
+    const el=document.getElementById('resultado');
+    el.className='r-err';el.textContent='❌ Error: '+e.message;el.style.display='block';
+  } finally{btn.disabled=false;loader.style.display='none';}
+}
+</script>
+</body>
+</html>

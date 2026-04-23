@@ -1,0 +1,33 @@
+{
+  "twitter": {
+    "bearer_token": "TU_BEARER_TOKEN_AQUI",
+    "username": "ICETEXColombia",
+    "sla_horas": 4
+  },
+  "facebook": {
+    "page_id": "@icetex_Colombia",
+    "access_token": "TU_PAGE_ACCESS_TOKEN_AQUI",
+    "sla_horas": 8
+  },
+  "instagram": {
+    "user_id": "",
+    "access_token": "",
+    "username": "@icetex_colombia",
+    "sla_horas": 12
+  },
+  "settings": {
+    "days_back": 7,
+    "max_posts_per_platform": 10
+  },
+  "alertas": {
+    "activo": false,
+    "smtp_host": "smtp.gmail.com",
+    "smtp_port": 587,
+    "usuario": "tu_correo@gmail.com",
+    "password": "tu_contraseña_de_aplicacion",
+    "destinatarios": [
+      "destinatario@icetex.gov.co"
+    ],
+    "umbral_sin_respuesta": 5
+  }
+}
