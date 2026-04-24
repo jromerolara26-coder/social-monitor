@@ -6,7 +6,9 @@ Ejecutar:  python app.py
 Acceder:   http://TU_IP:5000
 """
 
-import json, os, sys, subprocess, sqlite3, socket
+import json, os, sys, subprocess, socket
+import psycopg2
+import psycopg2.extras
 from datetime import datetime
 from flask import Flask, request, render_template, redirect, url_for, jsonify, send_file
 
@@ -17,36 +19,42 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
     except Exception:
         pass
 
-BASE      = os.path.dirname(os.path.abspath(__file__))
-# En Render los archivos viven en /tmp para sobrevivir entre requests
-DATA_DIR  = os.environ.get("DATA_DIR", BASE)
-DB_PATH   = os.path.join(DATA_DIR, "envios.db")
-JSON_OUT  = os.path.join(DATA_DIR, "datos_social_icetex.json")
-HTML_OUT  = os.path.join(DATA_DIR, "reporte_social_icetex.html")
-XLSX_OUT  = os.path.join(DATA_DIR, "reporte_social_icetex.xlsx")
+BASE         = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR     = os.environ.get("DATA_DIR", BASE)
+DATABASE_URL = os.environ.get("DATABASE_URL")
+JSON_OUT     = os.path.join(DATA_DIR, "datos_social_icetex.json")
+HTML_OUT     = os.path.join(DATA_DIR, "reporte_social_icetex.html")
+XLSX_OUT     = os.path.join(DATA_DIR, "reporte_social_icetex.xlsx")
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = os.environ.get("SECRET_KEY", "dev-key-local")
 
 # ── Base de datos
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    url = DATABASE_URL
+    if url and url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
     return conn
 
 def init_db():
-    with get_db() as db:
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS envios (
-                id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                analista  TEXT,
-                fb_cuenta TEXT,
-                ig_cuenta TEXT,
-                datos     TEXT,
-                sla       TEXT,
-                fecha     TEXT
-            )
-        """)
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS envios (
+                    id        SERIAL PRIMARY KEY,
+                    analista  TEXT,
+                    fb_cuenta TEXT,
+                    ig_cuenta TEXT,
+                    datos     TEXT,
+                    sla       TEXT,
+                    fecha     TEXT
+                )
+            """)
+        conn.commit()
+    finally:
+        conn.close()
 
 # ── Helpers
 def get_ip():
@@ -60,8 +68,13 @@ def get_ip():
         return "localhost"
 
 def consolidar_datos():
-    with get_db() as db:
-        rows = db.execute("SELECT * FROM envios ORDER BY fecha DESC").fetchall()
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM envios ORDER BY fecha DESC")
+            rows = cur.fetchall()
+    finally:
+        conn.close()
     if not rows:
         return None, []
 
@@ -117,17 +130,27 @@ def enviar():
         "instagram": body.get("instagram", []),
     }, ensure_ascii=False)
 
-    with get_db() as db:
-        db.execute(
-            "INSERT INTO envios (analista, fb_cuenta, ig_cuenta, datos, sla, fecha) VALUES (?,?,?,?,?,?)",
-            (analista, fb_cuenta, ig_cuenta, datos_str, sla, datetime.now().isoformat())
-        )
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO envios (analista, fb_cuenta, ig_cuenta, datos, sla, fecha) VALUES (%s,%s,%s,%s,%s,%s)",
+                (analista, fb_cuenta, ig_cuenta, datos_str, sla, datetime.now().isoformat())
+            )
+        conn.commit()
+    finally:
+        conn.close()
     return jsonify({"ok": True, "mensaje": f"Datos de '{analista}' guardados correctamente."})
 
 @app.route("/admin")
 def admin():
-    with get_db() as db:
-        rows = db.execute("SELECT id, analista, fb_cuenta, ig_cuenta, fecha, datos FROM envios ORDER BY fecha DESC").fetchall()
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, analista, fb_cuenta, ig_cuenta, fecha, datos FROM envios ORDER BY fecha DESC")
+            rows = cur.fetchall()
+    finally:
+        conn.close()
     envios = []
     for r in rows:
         try:
@@ -152,8 +175,13 @@ def admin():
 
 @app.route("/eliminar/<int:eid>", methods=["POST"])
 def eliminar(eid):
-    with get_db() as db:
-        db.execute("DELETE FROM envios WHERE id=?", (eid,))
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM envios WHERE id=%s", (eid,))
+        conn.commit()
+    finally:
+        conn.close()
     return redirect(url_for("admin"))
 
 @app.route("/generar", methods=["POST"])
