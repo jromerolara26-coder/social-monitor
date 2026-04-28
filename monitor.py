@@ -122,6 +122,29 @@ TEMAS = {
     ]
 }
 
+EMOCIONES = {
+    "Crítico": [
+        "queja", "reclamo", "denuncia", "estafa", "abuso", "escándalo", "escandalo",
+        "inaceptable", "indignante", "vergüenza", "verguenza", "perjuicio",
+        "negligencia", "corrupción", "corrupcion", "demanda", "tutela",
+        "fraude", "robo", "mentira", "engaño", "engano", "incumplimiento"
+    ],
+    "Negativo": [
+        "malo", "mal ", "terrible", "pésimo", "pesimo", "horrible", "fatal",
+        "molesto", "frustrado", "decepcionado", "decepción", "decepcion",
+        "insatisfecho", "inconformidad", "malestar", "no funciona",
+        "no responden", "nadie responde", "sin respuesta",
+        "demora", "retraso", "tardanza", "cansado", "harto"
+    ],
+    "Positivo": [
+        "gracias", "excelente", "genial", "perfecto", "bien ", "bueno", "buena",
+        "feliz", "contento", "satisfecho", "encantado", "maravilloso",
+        "increíble", "increible", "fantástico", "fantastico", "agradecido",
+        "agradezco", "aprecio", "resolvieron", "solucionaron",
+        "atendieron", "eficiente", "buen servicio"
+    ],
+}
+
 FRASES_GENERICAS = [
     "gracias por contactarnos", "gracias por escribirnos", "gracias por comunicarte",
     "te invitamos a ingresar", "visita nuestra página", "ingresa a",
@@ -185,6 +208,14 @@ def clasificar_tema(texto: str) -> str:
             mejor_score = score
             mejor_tema = tema
     return mejor_tema
+
+
+def detectar_emocion(texto: str) -> str:
+    t = texto.lower()
+    for emocion in ["Crítico", "Negativo", "Positivo"]:
+        if any(p in t for p in EMOCIONES[emocion]):
+            return emocion
+    return "Neutro"
 
 
 def evaluar_calidad(comentario: str, respuesta: str) -> Dict:
@@ -314,6 +345,7 @@ class TwitterMonitor:
                     "texto_respuesta": txt_resp,
                     "tema": clasificar_tema(com["text"]),
                     "calidad": evaluar_calidad(com["text"], txt_resp or ""),
+                    "emocion": detectar_emocion(com["text"]),
                     "cumple_sla": (t_resp_min <= sla_horas * 60) if t_resp_min is not None else None
                 })
 
@@ -416,6 +448,7 @@ class FacebookMonitor:
                     "texto_respuesta": txt_resp,
                     "tema": clasificar_tema(texto_com),
                     "calidad": evaluar_calidad(texto_com, txt_resp or ""),
+                    "emocion": detectar_emocion(texto_com),
                     "cumple_sla": (t_resp_min <= sla_horas * 60) if t_resp_min is not None else None
                 })
 
@@ -511,6 +544,7 @@ class InstagramMonitor:
                     "texto_respuesta": txt_resp,
                     "tema": clasificar_tema(texto_com),
                     "calidad": evaluar_calidad(texto_com, txt_resp or ""),
+                    "emocion": detectar_emocion(texto_com),
                     "cumple_sla": (t_resp_min <= sla_horas * 60) if t_resp_min is not None else None
                 })
 
@@ -536,9 +570,11 @@ def calcular_metricas(publicaciones: List[Dict], sla_h: float) -> Dict:
     calidades  = [c["calidad"]["score"] for p in publicaciones for c in p["comentarios"] if c["respondido"]]
 
     temas: Dict[str, int] = {}
+    emociones: Dict[str, int] = {"Positivo": 0, "Negativo": 0, "Crítico": 0, "Neutro": 0}
     for p in publicaciones:
         for c in p["comentarios"]:
             temas[c["tema"]] = temas.get(c["tema"], 0) + 1
+            emociones[c.get("emocion", "Neutro")] = emociones.get(c.get("emocion", "Neutro"), 0) + 1
 
     return {
         "total_publicaciones": len(publicaciones),
@@ -553,7 +589,8 @@ def calcular_metricas(publicaciones: List[Dict], sla_h: float) -> Dict:
         "resp_genericas": sum(1 for s in calidades if s == 1),
         "resp_parciales": sum(1 for s in calidades if s == 2),
         "resp_especificas": sum(1 for s in calidades if s == 3),
-        "temas": dict(sorted(temas.items(), key=lambda x: x[1], reverse=True))
+        "temas": dict(sorted(temas.items(), key=lambda x: x[1], reverse=True)),
+        "emociones": emociones,
     }
 
 
@@ -752,7 +789,7 @@ def exportar_excel(datos: Dict[str, List[Dict]], metricas_plat: Dict, mg: Dict,
         ws2.row_dimensions[1].height = 28
 
         hdrs = ["Fecha", "Publicación", "Usuario", "Comentario", "Tema",
-                "Respondido", "Tiempo Resp.", "Cumple SLA", "Calidad", "Texto Respuesta"]
+                "Respondido", "Tiempo Resp.", "Cumple SLA", "Calidad", "Emoción", "Texto Respuesta"]
         for col, h in enumerate(hdrs, 1):
             cell = ws2.cell(row=2, column=col, value=h)
             cell.font = bold_font(BLANCO)
@@ -779,6 +816,7 @@ def exportar_excel(datos: Dict[str, List[Dict]], metricas_plat: Dict, mg: Dict,
                     fmt_tiempo(t_resp) if respondido else "—",
                     ("Sí" if cumple else "No") if cumple is not None else "—",
                     calidad["nivel"],
+                    com.get("emocion", "Neutro"),
                     (com.get("texto_respuesta") or "")[:150]
                 ]
                 for col, v in enumerate(vals, 1):
@@ -800,10 +838,14 @@ def exportar_excel(datos: Dict[str, List[Dict]], metricas_plat: Dict, mg: Dict,
                         c_map = {0: ROJO, 1: NARANJA, 2: AZUL_CLARO, 3: VERDE}
                         cell.font = Font(bold=True, color=c_map.get(calidad["score"], "000000"))
                         cell.alignment = center()
+                    if col == 10:  # Emoción
+                        e_map = {"Positivo": VERDE, "Negativo": NARANJA, "Crítico": ROJO, "Neutro": "7F8C8D"}
+                        cell.font = Font(bold=True, color=e_map.get(com.get("emocion", "Neutro"), "000000"))
+                        cell.alignment = center()
                 fila += 1
 
         ws2.freeze_panes = "A3"
-        for w, col in zip([12, 30, 18, 40, 22, 10, 12, 11, 12, 45], range(1, 11)):
+        for w, col in zip([12, 30, 18, 40, 22, 10, 12, 11, 12, 12, 45], range(1, 12)):
             ws2.column_dimensions[get_column_letter(col)].width = w
 
     try:
@@ -836,6 +878,19 @@ def badge_calidad(score: int) -> str:
     return (f'<span style="background:{color};color:#fff;padding:2px 9px;'
             f'border-radius:10px;font-size:0.73rem;font-weight:700;white-space:nowrap">'
             f'{label}</span>')
+
+
+def badge_emocion(emocion: str) -> str:
+    mapa = {
+        "Positivo": ("#27ae60", "😊"),
+        "Negativo": ("#e67e22", "😞"),
+        "Crítico":  ("#e74c3c", "😡"),
+        "Neutro":   ("#7f8c8d", "😐"),
+    }
+    color, emoji = mapa.get(emocion, ("#95a5a6", "❓"))
+    return (f'<span style="background:{color};color:#fff;padding:2px 9px;'
+            f'border-radius:10px;font-size:0.73rem;font-weight:700;white-space:nowrap">'
+            f'{emoji} {emocion}</span>')
 
 
 def generar_reporte(datos: Dict[str, List[Dict]], config: Dict,
@@ -897,6 +952,14 @@ def generar_reporte(datos: Dict[str, List[Dict]], config: Dict,
                   mg.get("resp_parciales", 0), mg.get("resp_especificas", 0)] if mg else [0, 0, 0, 0]
     cal_colors_js = ["#e74c3c", "#e67e22", "#2980b9", "#27ae60"]
 
+    emociones_global: Dict[str, int] = {"Positivo": 0, "Negativo": 0, "Crítico": 0, "Neutro": 0}
+    for m in metricas_plat.values():
+        for e, n in m.get("emociones", {}).items():
+            emociones_global[e] = emociones_global.get(e, 0) + n
+    em_labels = ["Positivo", "Negativo", "Crítico", "Neutro"]
+    em_counts  = [emociones_global.get(e, 0) for e in em_labels]
+    em_colors  = ["#27ae60", "#e67e22", "#e74c3c", "#7f8c8d"]
+
     charts_section = f"""
     <div class="charts-grid">
       <div class="chart-card">
@@ -914,6 +977,10 @@ def generar_reporte(datos: Dict[str, List[Dict]], config: Dict,
       <div class="chart-card">
         <div class="chart-title">Cumplimiento SLA por Plataforma</div>
         <canvas id="chartSLA"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Distribución de Emociones (Global)</div>
+        <canvas id="chartEmociones"></canvas>
       </div>
     </div>
     <script>
@@ -975,6 +1042,19 @@ def generar_reporte(datos: Dict[str, List[Dict]], config: Dict,
         x: {{ grid: {{ display: false }} }}
       }}, plugins: {{ ...chartDefaults.plugins, legend: {{ display: false }} }} }}
     }});
+
+    new Chart(document.getElementById('chartEmociones'), {{
+      type: 'doughnut',
+      data: {{
+        labels: {json.dumps(em_labels)},
+        datasets: [{{ data: {json.dumps(em_counts)},
+          backgroundColor: {json.dumps(em_colors)},
+          borderWidth: 2, borderColor: '#fff' }}]
+      }},
+      options: {{ ...chartDefaults, cutout: '62%',
+        plugins: {{ ...chartDefaults.plugins,
+          legend: {{ position: 'bottom', labels: {{ padding: 14, font: {{ size: 11 }} }} }} }} }}
+    }});
     </script>"""
 
     # ── Secciones por plataforma
@@ -1016,6 +1096,7 @@ def generar_reporte(datos: Dict[str, List[Dict]], config: Dict,
                     {fmt_tiempo(tr_min) if com['respondido'] else '—'}</td>
                   <td class="nowrap">{sla_badge}</td>
                   <td>{badge_calidad(com['calidad']['score'])}</td>
+                  <td>{badge_emocion(com.get('emocion','Neutro'))}</td>
                   <td title="{html_lib.escape(txt_r)}">{html_lib.escape(txt_r[:80])}{'…' if len(txt_r)>80 else ''}</td>
                 </tr>"""
 
@@ -1044,9 +1125,9 @@ def generar_reporte(datos: Dict[str, List[Dict]], config: Dict,
               <thead><tr>
                 <th>Publicación</th><th>Usuario</th><th>Comentario</th>
                 <th>Tema</th><th>Respondido</th><th>Tiempo Resp.</th>
-                <th>Cumple SLA</th><th>Calidad</th><th>Texto Respuesta</th>
+                <th>Cumple SLA</th><th>Calidad</th><th>Emoción</th><th>Texto Respuesta</th>
               </tr></thead>
-              <tbody>{rows or '<tr><td colspan="9" class="empty">Sin comentarios en este período</td></tr>'}</tbody>
+              <tbody>{rows or '<tr><td colspan="10" class="empty">Sin comentarios en este período</td></tr>'}</tbody>
             </table>
           </div>
         </section>"""
@@ -1221,6 +1302,7 @@ def generar_datos_demo(page_name: str = "MiPagina", ig_user: str = "mi_instagram
             "texto_respuesta": txt_resp,
             "tema": t,
             "calidad": evaluar_calidad(texto, txt_resp or ""),
+            "emocion": detectar_emocion(texto),
             "cumple_sla": None if t_resp_min is None else t_resp_min <= 8 * 60,
         }
 
