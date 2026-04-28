@@ -124,24 +124,85 @@ TEMAS = {
 
 EMOCIONES = {
     "Crítico": [
-        "queja", "reclamo", "denuncia", "estafa", "abuso", "escándalo", "escandalo",
-        "inaceptable", "indignante", "vergüenza", "verguenza", "perjuicio",
-        "negligencia", "corrupción", "corrupcion", "demanda", "tutela",
-        "fraude", "robo", "mentira", "engaño", "engano", "incumplimiento"
+        # Denuncias formales
+        "queja", "reclamo", "denuncia", "tutela", "demanda", "acción legal",
+        "accion legal", "derecho de petición", "derecho de peticion",
+        "superintendencia", "defensoría", "defensoria", "procuraduría",
+        "procuraduria", "contraloría", "contraloria", "personería", "personeria",
+        # Fraude / corrupción
+        "estafa", "fraude", "robo", "hurto", "corrupción", "corrupcion",
+        "malversación", "malversacion", "peculado", "desfalco",
+        # Calificativos graves
+        "inaceptable", "indignante", "vergüenza", "verguenza", "escándalo",
+        "escandalo", "aberración", "aberracion", "injusticia", "ilegal",
+        "inconstitucional", "arbitrario",
+        # Conducta institucional
+        "abuso", "negligencia", "perjuicio", "incumplimiento", "engaño",
+        "engano", "mentira", "falsedad", "manipulación", "manipulacion",
+        "discriminación", "discriminacion", "acoso", "amenaza",
+        # Expresiones fuertes de malestar
+        "indignado", "indignada", "furioso", "furiosa", "desesperado",
+        "desesperada", "impotente", "rabia", "asco", "repudio",
+        "nunca más", "nunca mas", "no vuelvo", "los denuncio",
+        "voy a demandar", "tomaré acciones", "tomare acciones",
     ],
     "Negativo": [
-        "malo", "mal ", "terrible", "pésimo", "pesimo", "horrible", "fatal",
-        "molesto", "frustrado", "decepcionado", "decepción", "decepcion",
-        "insatisfecho", "inconformidad", "malestar", "no funciona",
-        "no responden", "nadie responde", "sin respuesta",
-        "demora", "retraso", "tardanza", "cansado", "harto"
+        # Calificativos negativos
+        "malo", "mala", "mal ", "terrible", "pésimo", "pesimo", "horrible",
+        "fatal", "deficiente", "deplorable", "lamentable", "desastroso",
+        "desastrosa", "pobre", "mediocre", "nefasto", "nefasta",
+        # Estados emocionales
+        "molesto", "molesta", "frustrado", "frustrada", "decepcionado",
+        "decepcionada", "decepción", "decepcion", "triste", "angustiado",
+        "angustiada", "desesperanzado", "preocupado", "preocupada",
+        "cansado", "cansada", "harto", "harta", "agotado", "agotada",
+        "estresado", "estresada", "desmotivado", "desmotivada",
+        # Insatisfacción con el servicio
+        "insatisfecho", "insatisfecha", "inconformidad", "malestar",
+        "no funciona", "no sirve", "no carga", "no responden",
+        "nadie responde", "sin respuesta", "ignorando", "ignorado",
+        "ignorada", "abandonado", "abandonada", "olvidado", "olvidada",
+        # Tiempos y demoras
+        "demora", "demorado", "retraso", "retrasado", "tardanza",
+        "lento", "lenta", "tardado", "tardada", "siglos", "eternidad",
+        "hace días", "hace dias", "hace semanas", "hace meses",
+        "llevo esperando", "sigo esperando", "aún no", "aun no",
+        "todavía no", "todavia no", "sin novedad", "sin solución",
+        "sin solucion",
+        # Problemas específicos ICETEX
+        "bloqueado", "bloqueada", "suspendido", "suspendida", "cancelado",
+        "cancelada", "rechazado", "rechazada", "negado", "negada",
+        "desembolso no llega", "no han desembolsado", "no llegó",
+        "no llego", "cobro incorrecto", "cobro errado", "me cobraron mal",
+        "deuda incorrecta", "saldo incorrecto",
     ],
     "Positivo": [
-        "gracias", "excelente", "genial", "perfecto", "bien ", "bueno", "buena",
-        "feliz", "contento", "satisfecho", "encantado", "maravilloso",
-        "increíble", "increible", "fantástico", "fantastico", "agradecido",
-        "agradezco", "aprecio", "resolvieron", "solucionaron",
-        "atendieron", "eficiente", "buen servicio"
+        # Agradecimiento
+        "gracias", "muchas gracias", "mil gracias", "agradecido", "agradecida",
+        "agradezco", "agradecemos", "aprecio", "apreciamos", "reconozco",
+        "feliz", "contento", "contenta", "satisfecho", "satisfecha",
+        # Calificativos positivos
+        "excelente", "genial", "perfecto", "perfecta", "bueno", "buena",
+        "bien ", "muy bien", "maravilloso", "maravillosa", "increíble",
+        "increible", "fantástico", "fantastica", "fantástica", "estupendo",
+        "estupenda", "espectacular", "extraordinario", "extraordinaria",
+        "sobresaliente", "notable", "destacado", "destacada",
+        # Encantado / sorprendido positivamente
+        "encantado", "encantada", "sorprendido positivamente", "impresionado",
+        "impresionada", "felicitaciones", "felicito", "felicitamos",
+        "bravo", "bien hecho", "muy profesional", "muy amable",
+        # Resolución efectiva
+        "resolvieron", "solucionaron", "atendieron", "respondieron rápido",
+        "respondieron rapido", "me ayudaron", "me orientaron", "lo lograron",
+        "cumplieron", "eficiente", "eficientes", "eficaz", "buen servicio",
+        "excelente servicio", "buen trabajo", "excelente atención",
+        "excelente atencion", "gran apoyo", "muy eficaz",
+        # Experiencia positiva con ICETEX
+        "me aprobaron", "me desembolsaron", "recibí el dinero",
+        "recibi el dinero", "llegó el desembolso", "llego el desembolso",
+        "me renovaron", "me legalizaron", "proceso exitoso",
+        "trámite rápido", "tramite rapido", "fácil y rápido",
+        "facil y rapido", "muy claro", "muy clara",
     ],
 }
 
