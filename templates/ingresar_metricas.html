@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ingresar Métricas — Social Monitor</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config = { theme: { extend: { colors: { brand:"#1e7abf" } } } }</script>
+<style>
+  body { font-family:'Segoe UI',Arial,sans-serif; }
+  .tab-btn { @apply px-5 py-2.5 text-sm font-medium rounded-t-lg border-b-2 transition-all; }
+  .tab-btn.active { @apply border-brand text-brand; }
+  .tab-btn:not(.active) { @apply border-transparent text-gray-500 hover:text-gray-700; }
+  .field { @apply block w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand; }
+  label.lbl { @apply block text-xs font-semibold text-gray-600 mb-1; }
+  .section-title { @apply text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 mt-5; }
+</style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- Nav -->
+<header class="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4">
+  <a href="/dashboard" class="text-brand font-bold text-lg">← Dashboard</a>
+  <span class="text-gray-300">|</span>
+  <span class="text-gray-600 text-sm font-medium">Ingresar métricas manuales</span>
+</header>
+
+<div class="max-w-3xl mx-auto px-4 py-8">
+
+  {% if mensaje %}
+  <div class="bg-green-50 border border-green-200 text-green-700 rounded-xl px-5 py-3 mb-6 text-sm font-medium">
+    {{ mensaje }}
+  </div>
+  {% endif %}
+  {% if error %}
+  <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl px-5 py-3 mb-6 text-sm font-medium">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <!-- Tabs -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="border-b border-gray-100 px-4 flex gap-2 pt-3" id="tabs">
+      <button onclick="showTab('metricas')"  class="tab-btn active" id="tab-metricas">📊 Métricas</button>
+      <button onclick="showTab('publicacion')" class="tab-btn" id="tab-publicacion">📝 Publicaciones</button>
+      <button onclick="showTab('tema')"      class="tab-btn" id="tab-tema">🏷️ Temas</button>
+    </div>
+
+    <!-- ── TAB: Métricas -->
+    <div id="panel-metricas" class="p-6">
+      <form method="POST">
+        <input type="hidden" name="accion" value="metricas"/>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="lbl">Plataforma</label>
+            <select name="plataforma" required class="field">
+              {% for p in plataformas %}
+              <option>{{ p }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="lbl">Mes</label>
+              <select name="mes" class="field">
+                {% for i in range(1,13) %}
+                <option value="{{ i }}" {% if i == mes_actual %}selected{% endif %}>
+                  {{ ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][i] }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Año</label>
+              <input type="number" name="anio" value="{{ anio_actual }}" class="field"/>
+            </div>
+          </div>
+        </div>
+
+        <p class="section-title">Seguidores</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="lbl">Seguidores mes actual</label>
+            <input type="number" name="seguidores" min="0" placeholder="0" class="field"/>
+          </div>
+          <div>
+            <label class="lbl">Seguidores mes anterior</label>
+            <input type="number" name="seguidores_ant" min="0" placeholder="0" class="field"/>
+          </div>
+        </div>
+
+        <p class="section-title">Interacciones</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div><label class="lbl">Visualizaciones</label><input type="number" name="visualizaciones" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Likes</label><input type="number" name="likes" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Comentarios</label><input type="number" name="comentarios" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Compartidos</label><input type="number" name="compartidos" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Guardados</label><input type="number" name="guardados" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Publicaciones totales</label><input type="number" name="publicaciones" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Comentarios respondidos</label><input type="number" name="respondidas" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Alcance no seguidores %</label><input type="number" name="alcance_ext_pct" min="0" max="100" step="0.1" placeholder="0" class="field"/></div>
+        </div>
+
+        <p class="section-title">Sentimiento de comentarios</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div><label class="lbl">😊 Positivos</label><input type="number" name="sent_pos" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">😞 Negativos</label><input type="number" name="sent_neg" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">😐 Neutros</label><input type="number" name="sent_neu" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">😡 Críticos</label><input type="number" name="sent_crit" min="0" placeholder="0" class="field"/></div>
+        </div>
+
+        <button type="submit"
+          class="mt-6 w-full bg-brand text-white font-semibold py-2.5 rounded-xl hover:opacity-90 transition">
+          Guardar métricas
+        </button>
+      </form>
+    </div>
+
+    <!-- ── TAB: Publicaciones -->
+    <div id="panel-publicacion" class="p-6 hidden">
+      <form method="POST">
+        <input type="hidden" name="accion" value="publicacion"/>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="lbl">Plataforma</label>
+            <select name="plataforma" required class="field">
+              {% for p in plataformas %}<option>{{ p }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="lbl">Mes</label>
+              <select name="mes" class="field">
+                {% for i in range(1,13) %}
+                <option value="{{ i }}" {% if i == mes_actual %}selected{% endif %}>
+                  {{ ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][i] }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Año</label>
+              <input type="number" name="anio" value="{{ anio_actual }}" class="field"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="lbl">Texto de la publicación</label>
+          <textarea name="texto_pub" rows="3" placeholder="Escribe o pega el texto de la publicación..." class="field"></textarea>
+        </div>
+
+        <p class="section-title">Métricas de la publicación</p>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div><label class="lbl">Likes</label><input type="number" name="pub_likes" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Comentarios</label><input type="number" name="pub_comentarios" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Compartidos</label><input type="number" name="pub_compartidos" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Guardados</label><input type="number" name="pub_guardados" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Visualizaciones</label><input type="number" name="pub_visualizaciones" min="0" placeholder="0" class="field"/></div>
+          <div><label class="lbl">Alcance total</label><input type="number" name="pub_alcance" min="0" placeholder="0" class="field"/></div>
+        </div>
+
+        <div class="mt-4">
+          <label class="lbl">Clasificar como</label>
+          <div class="flex gap-3">
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="radio" name="pub_tipo" value="viral" class="accent-brand"/> 🔥 Viral
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="radio" name="pub_tipo" value="bajo" class="accent-brand"/> 📉 Bajo rendimiento
+            </label>
+            <label class="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="radio" name="pub_tipo" value="normal" checked class="accent-brand"/> Normal
+            </label>
+          </div>
+        </div>
+
+        <button type="submit"
+          class="mt-6 w-full bg-brand text-white font-semibold py-2.5 rounded-xl hover:opacity-90 transition">
+          Guardar publicación
+        </button>
+      </form>
+    </div>
+
+    <!-- ── TAB: Temas -->
+    <div id="panel-tema" class="p-6 hidden">
+      <form method="POST">
+        <input type="hidden" name="accion" value="tema"/>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="lbl">Mes</label>
+            <select name="mes" class="field">
+              {% for i in range(1,13) %}
+              <option value="{{ i }}" {% if i == mes_actual %}selected{% endif %}>
+                {{ ["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][i] }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Año</label>
+            <input type="number" name="anio" value="{{ anio_actual }}" class="field"/>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <label class="lbl">Nombre del tema</label>
+          <input type="text" name="tema_nombre" placeholder="Ej: Crédito / Pago, Beca ACCES, Desembolso..." class="field" required/>
+        </div>
+        <div class="mt-4">
+          <label class="lbl">Número de menciones / consultas</label>
+          <input type="number" name="tema_menciones" min="0" placeholder="0" class="field" required/>
+        </div>
+
+        <button type="submit"
+          class="mt-6 w-full bg-brand text-white font-semibold py-2.5 rounded-xl hover:opacity-90 transition">
+          Guardar tema
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showTab(id) {
+  ['metricas','publicacion','tema'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== id);
+    document.getElementById('tab-' + t).classList.toggle('active', t === id);
+  });
+}
+</script>
+</body>
+</html>
