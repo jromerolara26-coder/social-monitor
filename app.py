@@ -166,9 +166,11 @@ def consolidar_datos():
         conn.close()
     if not rows:
         return None, []
-    consolidado = {"twitter": [], "facebook": [], "instagram": []}
+    consolidado = {"twitter": [], "facebook": [], "instagram": [],
+                   "linkedin": [], "tiktok": [], "youtube": []}
     analistas   = []
-    sla_final   = {"facebook": 8, "instagram": 12, "twitter": 4}
+    sla_final   = {"facebook": 8, "instagram": 12, "twitter": 4,
+                   "linkedin": 8, "tiktok": 24, "youtube": 24}
     for row in rows:
         try:
             d = json.loads(row["datos"])
@@ -179,6 +181,9 @@ def consolidar_datos():
             consolidado["facebook"]  += d.get("facebook",  [])
             consolidado["instagram"] += d.get("instagram", [])
             consolidado["twitter"]   += d.get("twitter",   [])
+            consolidado["linkedin"]  += d.get("linkedin",  [])
+            consolidado["tiktok"]    += d.get("tiktok",    [])
+            consolidado["youtube"]   += d.get("youtube",   [])
         except Exception:
             continue
     return consolidado, analistas, sla_final
@@ -199,6 +204,9 @@ def formulario():
         "facebook":  config.get("facebook",  {}).get("sla_horas", 8),
         "instagram": config.get("instagram", {}).get("sla_horas", 12),
         "twitter":   config.get("twitter",   {}).get("sla_horas", 4),
+        "linkedin":  config.get("linkedin",  {}).get("sla_horas", 8),
+        "tiktok":    config.get("tiktok",    {}).get("sla_horas", 24),
+        "youtube":   config.get("youtube",   {}).get("sla_horas", 24),
     }
     return render_template("formulario.html", sla=sla)
 
@@ -214,6 +222,9 @@ def enviar():
         "twitter":   body.get("twitter",   []),
         "facebook":  body.get("facebook",  []),
         "instagram": body.get("instagram", []),
+        "linkedin":  body.get("linkedin",  []),
+        "tiktok":    body.get("tiktok",    []),
+        "youtube":   body.get("youtube",   []),
     }, ensure_ascii=False)
     conn = get_db()
     try:

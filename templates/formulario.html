@@ -7,8 +7,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:14px}
-.hdr{background:linear-gradient(135deg,#0a4b8c,#1565c0 60%,#1976d2);color:#fff;
-  padding:18px 28px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.hdr{background:linear-gradient(135deg,#0a4b8c,#1565c0 60%,#1976d2);color:#fff;padding:18px 28px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
 .hdr h1{font-size:1.2rem;font-weight:800}
 .hdr p{font-size:.8rem;opacity:.85;margin-top:3px}
 .main{max-width:820px;margin:0 auto;padding:20px 14px}
@@ -28,11 +27,10 @@ textarea{resize:vertical;min-height:55px}
 .btn-o{background:#fff;color:#1976d2;border:2px solid #1976d2}.btn-o:hover{background:#e8f0fe}
 .btn-sm{padding:4px 11px;font-size:.75rem}
 .btn-bl{width:100%;justify-content:center;padding:13px;font-size:.95rem}
-.tabs{display:flex;gap:8px;margin-bottom:16px}
-.tab{padding:8px 20px;border-radius:7px;border:2px solid #d0d9e8;font-weight:700;font-size:.83rem;cursor:pointer;background:#fff}
-.tab.fb.on{background:#1877F2;color:#fff;border-color:#1877F2}
-.tab.ig.on{background:#C13584;color:#fff;border-color:#C13584}
-.tab:not(.on):hover{border-color:#1976d2;color:#1976d2}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.tab{padding:8px 14px;border-radius:7px;border:2px solid #d0d9e8;font-weight:700;font-size:.83rem;cursor:pointer;background:#fff;transition:.15s}
+.tab:hover{border-color:#1976d2;color:#1976d2}
+.tab.on{color:#fff}
 .pub{border:2px solid #e8f0fe;border-radius:10px;padding:16px;margin-bottom:14px;position:relative}
 .pub-n{font-size:.7rem;font-weight:800;color:#888;text-transform:uppercase;margin-bottom:8px}
 .pr{position:absolute;top:12px;right:12px}
@@ -43,7 +41,7 @@ textarea{resize:vertical;min-height:55px}
 .rb.on{display:block}
 .tbadge{display:inline-block;margin-top:5px;padding:3px 9px;border-radius:16px;font-size:.72rem;font-weight:700}
 .tok{background:#e8f9ee;color:#217346}.twarn{background:#fff3e0;color:#e65100}
-.sla-g{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sla-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .sla-i{text-align:center;background:#f8f9ff;border-radius:9px;padding:10px}
 .sla-i label{text-align:center;font-size:.68rem}
 .sla-i input{text-align:center;font-weight:700;font-size:.95rem;border:none;background:transparent;padding:3px}
@@ -51,13 +49,13 @@ textarea{resize:vertical;min-height:55px}
 #msg{border-radius:9px;padding:12px 16px;margin-bottom:14px;display:none;font-size:.85rem}
 .msg-ok{background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32}
 .msg-err{background:#fce8e8;border:1px solid #ef9a9a;color:#c62828}
-@media(max-width:600px){.g2,.g3{grid-template-columns:1fr}.sla-g{grid-template-columns:1fr}}
+@media(max-width:600px){.g2,.g3{grid-template-columns:1fr}.sla-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 <header class="hdr">
   <h1>📋 Social Monitor — Ingreso de datos</h1>
-  <p>Completa el formulario con tus publicaciones y comentarios, luego haz clic en Enviar.</p>
+  <p>Selecciona la red social, completa las publicaciones y comentarios, luego haz clic en Enviar.</p>
 </header>
 
 <div class="main">
@@ -68,28 +66,30 @@ textarea{resize:vertical;min-height:55px}
     <div class="g2">
       <div class="f"><label>Tu nombre / área</label>
         <input id="analista" type="text" placeholder="Ej: Equipo Community Manager"></div>
-      <div class="f"><label>Página de Facebook</label>
-        <input id="fb_nombre" type="text" placeholder="Nombre de la página"></div>
+      <div class="f"><label>Cuenta / página principal</label>
+        <input id="cuenta_nombre" type="text" placeholder="Nombre de la cuenta o página"></div>
     </div>
-    <div class="f"><label>Usuario de Instagram (sin @)</label>
-      <input id="ig_nombre" type="text" placeholder="usuario_instagram"></div>
   </div>
 
   <div class="card">
-    <div class="sec">⏱️ SLA — Tiempo máximo de respuesta</div>
-    <div class="sla-g">
-      <div class="sla-i"><label>📘 Facebook (horas)</label>
-        <input id="sla_fb" type="number" value="{{ sla.facebook }}" min="1"></div>
-      <div class="sla-i"><label>📸 Instagram (horas)</label>
-        <input id="sla_ig" type="number" value="{{ sla.instagram }}" min="1"></div>
-      <div class="sla-i"><label>🐦 Twitter (horas)</label>
-        <input id="sla_tw" type="number" value="{{ sla.twitter }}" min="1"></div>
+    <div class="sec">⏱️ SLA — Tiempo máximo de respuesta por red</div>
+    <div class="sla-grid">
+      <div class="sla-i"><label>📘 Facebook (h)</label><input id="sla_facebook"   type="number" value="{{ sla.facebook }}"  min="1"></div>
+      <div class="sla-i"><label>📸 Instagram (h)</label><input id="sla_instagram" type="number" value="{{ sla.instagram }}" min="1"></div>
+      <div class="sla-i"><label>🐦 X/Twitter (h)</label><input id="sla_twitter"   type="number" value="{{ sla.twitter }}"   min="1"></div>
+      <div class="sla-i"><label>💼 LinkedIn (h)</label><input id="sla_linkedin"   type="number" value="8"  min="1"></div>
+      <div class="sla-i"><label>🎵 TikTok (h)</label><input id="sla_tiktok"     type="number" value="24" min="1"></div>
+      <div class="sla-i"><label>▶️ YouTube (h)</label><input id="sla_youtube"    type="number" value="24" min="1"></div>
     </div>
   </div>
 
-  <div class="tabs">
-    <button class="tab fb on" onclick="cambiarPlat('facebook')">📘 Facebook</button>
-    <button class="tab ig"    onclick="cambiarPlat('instagram')">📸 Instagram</button>
+  <div class="tabs" id="tabs-bar">
+    <button class="tab on" data-plat="facebook"  onclick="cambiarPlat('facebook')">📘 Facebook</button>
+    <button class="tab"    data-plat="instagram"  onclick="cambiarPlat('instagram')">📸 Instagram</button>
+    <button class="tab"    data-plat="twitter"    onclick="cambiarPlat('twitter')">🐦 X / Twitter</button>
+    <button class="tab"    data-plat="linkedin"   onclick="cambiarPlat('linkedin')">💼 LinkedIn</button>
+    <button class="tab"    data-plat="tiktok"     onclick="cambiarPlat('tiktok')">🎵 TikTok</button>
+    <button class="tab"    data-plat="youtube"    onclick="cambiarPlat('youtube')">▶️ YouTube</button>
   </div>
 
   <div class="card">
@@ -102,16 +102,27 @@ textarea{resize:vertical;min-height:55px}
 </div>
 
 <script>
+const PLATS = {
+  facebook:  {icon:'📘', label:'Facebook',    color:'#1877F2'},
+  instagram: {icon:'📸', label:'Instagram',   color:'#C13584'},
+  twitter:   {icon:'🐦', label:'X / Twitter', color:'#14171A'},
+  linkedin:  {icon:'💼', label:'LinkedIn',    color:'#0A66C2'},
+  tiktok:    {icon:'🎵', label:'TikTok',      color:'#010101'},
+  youtube:   {icon:'▶️', label:'YouTube',     color:'#FF0000'},
+};
+
 let plat = 'facebook';
-let cnt  = {facebook:0, instagram:0};
-let data = {twitter:[], facebook:[], instagram:[]};
+let cnt  = Object.fromEntries(Object.keys(PLATS).map(p=>[p,0]));
+let data = Object.fromEntries(Object.keys(PLATS).map(p=>[p,[]]));
+
+function getSLA(p){ return +(document.getElementById('sla_'+p)||{}).value || 8; }
 
 const TEMAS = {
   'crédito / pago':['crédito','credito','cuota','pago','deuda','mora','cobro'],
   'beca / condonación':['beca','condonación','condonacion','subsidio'],
   'trámites / portal':['portal','trámite','tramite','solicitud','sistema'],
-  'atención al cliente':['atención','atencion','servicio','demora','espera','chat'],
-  'reclamo / queja':['reclamo','queja','problema','error','terrible','injusto'],
+  'atención al cliente':['atención','atencion','servicio','demora','espera'],
+  'reclamo / queja':['reclamo','queja','problema','error','terrible'],
   'posgrado / internacional':['posgrado','maestría','maestria','exterior','internacional'],
 };
 function tema(txt){
@@ -126,14 +137,29 @@ function calidad(resp){
   if(w>=10) return {score:2,nivel:'Parcial',motivo:'Respuesta presente'};
   return {score:1,nivel:'Genérica',motivo:'Respuesta muy corta'};
 }
+function emocion(txt){
+  const t=(txt||'').toLowerCase();
+  const CRIT=['queja','reclamo','estafa','inaceptable','indignante','fraude','denuncia'];
+  const NEG=['malo','terrible','pésimo','pesimo','horrible','frustrado','decepción','error','demora'];
+  const POS=['gracias','excelente','genial','perfecto','satisfecho','encantado','agradecido'];
+  if(CRIT.some(w=>t.includes(w))) return 'Crítico';
+  if(NEG.some(w=>t.includes(w)))  return 'Negativo';
+  if(POS.some(w=>t.includes(w)))  return 'Positivo';
+  return 'Neutro';
+}
 function diffMin(a,b){return Math.abs((new Date(b)-new Date(a))/60000);}
 function fmtT(m){if(!m&&m!==0)return '';const h=Math.floor(m/60),mm=Math.round(m%60);return h?`${h}h ${mm}min`:`${mm}min`;}
 
 function cambiarPlat(p){
   plat=p;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-  document.querySelector(`.tab.${p==='facebook'?'fb':'ig'}`).classList.add('on');
-  document.getElementById('plat-titulo').textContent=p==='facebook'?'📘 Publicaciones de Facebook':'📸 Publicaciones de Instagram';
+  document.querySelectorAll('.tab').forEach(t=>{
+    const tp=t.dataset.plat;
+    const info=PLATS[tp];
+    t.classList.toggle('on',tp===p);
+    t.style.background = tp===p ? info.color : '';
+    t.style.borderColor = tp===p ? info.color : '';
+  });
+  document.getElementById('plat-titulo').textContent=`${PLATS[p].icon} Publicaciones de ${PLATS[p].label}`;
   renderPubs();
 }
 
@@ -173,7 +199,7 @@ function sf(pid,k,v){const p=data[plat].find(x=>x._id===pid);if(p)p[k]=v;}
 
 function renderComs(p){
   if(!p.comentarios.length) return '<p style="color:#aaa;font-size:.76rem;padding:4px 0">Sin comentarios aún.</p>';
-  const slaH=plat==='facebook'?+document.getElementById('sla_fb').value:+document.getElementById('sla_ig').value;
+  const slaH=getSLA(plat);
   return p.comentarios.map((c,i)=>{
     let badge='';
     if(c.respondido&&c.fecha&&c.fecha_resp){
@@ -233,34 +259,56 @@ function togResp(pid,cid,val){
 function updBadge(pid,cid){
   const p=data[plat].find(x=>x._id===pid);if(!p)return;
   const c=p.comentarios.find(x=>x._cid===cid);if(!c||!c.fecha||!c.fecha_resp)return;
-  const slaH=plat==='facebook'?+document.getElementById('sla_fb').value:+document.getElementById('sla_ig').value;
+  const slaH=getSLA(plat);
   const m=diffMin(c.fecha,c.fecha_resp),ok=m<=slaH*60;
   const el=document.getElementById(`bdg_${cid}`);
   if(el)el.innerHTML=`<span class="tbadge ${ok?'tok':'twarn'}">⏱ ${fmtT(m)} — ${ok?'✅ dentro del SLA':'⚠️ fuera del SLA'}</span>`;
 }
 
 function buildPayload(){
-  const sla={facebook:+document.getElementById('sla_fb').value||8,instagram:+document.getElementById('sla_ig').value||12,twitter:+document.getElementById('sla_tw').value||4};
-  const res={twitter:[],facebook:[],instagram:[]};
-  ['facebook','instagram'].forEach(p=>{
+  const sla=Object.fromEntries(Object.keys(PLATS).map(p=>[p,getSLA(p)]));
+  const res=Object.fromEntries(Object.keys(PLATS).map(p=>[p,[]]));
+
+  Object.keys(PLATS).forEach(p=>{
     (data[p]||[]).forEach((pub,pi)=>{
+      const slaH=getSLA(p);
       const coms=(pub.comentarios||[]).map(c=>{
         const resp=!!c.respondido;
         let t=null,cumple=null;
-        if(resp&&c.fecha&&c.fecha_resp){t=Math.round(diffMin(c.fecha,c.fecha_resp)*10)/10;cumple=t<=sla[p]*60;}
-        return{usuario:c.usuario||'Usuario',texto:c.texto||'',fecha:c.fecha?new Date(c.fecha).toISOString():new Date().toISOString(),
-          respondido:resp,tiempo_respuesta_min:t,texto_respuesta:resp?(c.texto_resp||''):null,
-          tema:tema(c.texto||''),calidad:calidad(resp?(c.texto_resp||''):''),cumple_sla:cumple};
+        if(resp&&c.fecha&&c.fecha_resp){t=Math.round(diffMin(c.fecha,c.fecha_resp)*10)/10;cumple=t<=slaH*60;}
+        return{
+          usuario:c.usuario||'Usuario',
+          texto:c.texto||'',
+          fecha:c.fecha?new Date(c.fecha).toISOString():new Date().toISOString(),
+          respondido:resp,
+          tiempo_respuesta_min:t,
+          texto_respuesta:resp?(c.texto_resp||''):null,
+          tema:tema(c.texto||''),
+          emocion:emocion(c.texto||''),
+          calidad:calidad(resp?(c.texto_resp||''):''),
+          cumple_sla:cumple
+        };
       });
-      res[p].push({id:`${p.substring(0,2).toUpperCase()}_${String(pi+1).padStart(3,'0')}_${Date.now()}`,
-        texto:pub.texto||'(Sin texto)',fecha:pub.fecha?new Date(pub.fecha).toISOString():new Date().toISOString(),
-        likes:pub.likes||0,shares:pub.shares||0,replies_total:coms.length,comentarios:coms,
-        url:pub.url||`https://www.${p}.com/${p==='facebook'?document.getElementById('fb_nombre').value:document.getElementById('ig_nombre').value}`});
+      res[p].push({
+        id:`${p.substring(0,2).toUpperCase()}_${String(pi+1).padStart(3,'0')}_${Date.now()}`,
+        texto:pub.texto||'(Sin texto)',
+        fecha:pub.fecha?new Date(pub.fecha).toISOString():new Date().toISOString(),
+        likes:pub.likes||0,shares:pub.shares||0,
+        replies_total:coms.length,
+        comentarios:coms,
+        url:pub.url||`https://www.${p}.com/`
+      });
     });
   });
-  return{_meta:{analista:document.getElementById('analista').value||'Anónimo',
-    fb_cuenta:document.getElementById('fb_nombre').value,ig_cuenta:document.getElementById('ig_nombre').value,sla,
-    generado:new Date().toISOString()},...res};
+
+  return{
+    _meta:{
+      analista:document.getElementById('analista').value||'Anónimo',
+      cuenta:document.getElementById('cuenta_nombre').value,
+      sla, generado:new Date().toISOString()
+    },
+    ...res
+  };
 }
 
 function showMsg(txt,ok){
@@ -271,7 +319,7 @@ function showMsg(txt,ok){
 }
 
 async function enviar(){
-  const total=data.facebook.length+data.instagram.length;
+  const total=Object.values(data).reduce((s,arr)=>s+arr.length,0);
   if(total===0){showMsg('⚠️ No hay publicaciones ingresadas.',false);return;}
   const payload=buildPayload();
   try{
@@ -279,13 +327,15 @@ async function enviar(){
     const d=await r.json();
     if(d.ok){
       showMsg('✅ '+d.mensaje+' El administrador puede generar el reporte cuando todos hayan enviado.',true);
-      data={twitter:[],facebook:[],instagram:[]};cnt={facebook:0,instagram:0};
+      data=Object.fromEntries(Object.keys(PLATS).map(p=>[p,[]]));
+      cnt=Object.fromEntries(Object.keys(PLATS).map(p=>[p,0]));
       renderPubs();
     } else showMsg('❌ '+d.mensaje,false);
   } catch(e){showMsg('❌ Error de conexión: '+e.message,false);}
 }
 
-renderPubs();
+// Inicializar tab activo con color
+cambiarPlat('facebook');
 </script>
 </body>
 </html>
