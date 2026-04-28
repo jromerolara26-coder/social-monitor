@@ -133,7 +133,7 @@ main{flex:1;padding:28px 32px;max-width:1100px}
     <button class="nav-btn" onclick="showSection('conclusiones',this)">🤖 Conclusiones IA</button>
   </nav>
   <div class="sidebar-footer">
-    <a href="/dashboard/ingresar" class="sidebar-link">✏️ Ingresar datos</a>
+    <a href="/formulario" class="sidebar-link">✏️ Ingresar datos</a>
     <a href="/admin" class="sidebar-link">🛠️ Admin comentarios</a>
     <a href="/reporte" class="sidebar-link">📄 Reporte detallado</a>
   </div>
@@ -231,12 +231,12 @@ function renderCharts(){
   const canvEvol = document.getElementById('chart-evol');
   if(canvEvol){
     const plats = DATA.plataformas||{};
-    const labels = Object.keys(plats).filter(p=>plats[p].seguidores>0);
+    const labels = Object.keys(plats).filter(p=>plats[p].total_comentarios>0);
     charts.push(new Chart(canvEvol,{
       type:'bar',
       data:{labels,datasets:[
-        {label:'Mes anterior',data:labels.map(p=>plats[p].seguidores_ant||0),backgroundColor:'#93c5fd',borderRadius:4},
-        {label:'Mes actual',  data:labels.map(p=>plats[p].seguidores||0),  backgroundColor:'#1e7abf',borderRadius:4},
+        {label:'Mes anterior',data:labels.map(p=>plats[p].comentarios_mes_ant||0),backgroundColor:'#93c5fd',borderRadius:4},
+        {label:'Mes actual',  data:labels.map(p=>plats[p].total_comentarios||0),backgroundColor:'#1e7abf',borderRadius:4},
       ]},
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{position:'top'}},
@@ -245,23 +245,29 @@ function renderCharts(){
   }
 }
 
+function fmtMin(m){
+  if(!m&&m!==0) return '—';
+  if(m<60) return Math.round(m)+'min';
+  if(m<1440) return (m/60).toFixed(1)+'h';
+  return (m/1440).toFixed(1)+' días';
+}
+
 function buildMetricas(plats){
   if(!Object.keys(plats).length) return emptyState();
   return Object.entries(plats).map(([nombre,d])=>{
-    const crec = d.crecimiento_pct||0;
+    const evol = d.evolucion_pct||0;
     const color = PLAT_COLORS[nombre]||'#1e7abf';
-    const total_int = (d.likes||0)+(d.comentarios||0)+(d.compartidos||0)+(d.guardados||0);
     return `<div class="plat-card">
       <div class="plat-card-head">
         <div class="plat-icon" style="background:${color}">${nombre[0]}</div>
-        <div><div class="plat-name">${nombre}</div><div class="plat-seg">${fmtNum(d.seguidores)} seguidores</div></div>
-        <div class="plat-crec ${crec>=0?'pos':'neg'}">${crec>=0?'▲':'▼'} ${Math.abs(crec)}%</div>
+        <div><div class="plat-name">${nombre}</div><div class="plat-seg">${fmtNum(d.total_comentarios)} comentarios</div></div>
+        <div class="plat-crec ${evol>=0?'pos':'neg'}">${evol>=0?'▲':'▼'} ${Math.abs(evol)}%</div>
       </div>
       <div class="kpi-grid">
-        <div class="kpi-box"><div class="kpi-label">Visualizaciones</div><div class="kpi-val">${fmtNum(d.visualizaciones)}</div></div>
-        <div class="kpi-box"><div class="kpi-label">Engagement</div><div class="kpi-val">${d.engagement_rate||0}%</div></div>
-        <div class="kpi-box"><div class="kpi-label">Interacciones</div><div class="kpi-val">${fmtNum(total_int)}</div></div>
+        <div class="kpi-box"><div class="kpi-label">Publicaciones</div><div class="kpi-val">${fmtNum(d.publicaciones)}</div></div>
         <div class="kpi-box"><div class="kpi-label">Tasa Respuesta</div><div class="kpi-val">${d.tasa_respuesta||0}%</div></div>
+        <div class="kpi-box"><div class="kpi-label">Respondidos</div><div class="kpi-val">${fmtNum(d.respondidos)}</div></div>
+        <div class="kpi-box"><div class="kpi-label">T. Promedio</div><div class="kpi-val">${fmtMin(d.tiempo_promedio_min)}</div></div>
       </div>
     </div>`;
   }).join('');
@@ -275,19 +281,29 @@ function buildPost(p, tipo){
     <div class="post-body">
       <div class="post-text">${p.texto||'(Sin texto)'}</div>
       <div class="tags">
-        <span class="tag tag-red">❤️ ${fmtNum(p.likes)}</span>
-        <span class="tag tag-blue">💬 ${fmtNum(p.comentarios)}</span>
-        <span class="tag tag-green">↗ ${fmtNum(p.compartidos)}</span>
-        <span class="tag tag-yellow">🔖 ${fmtNum(p.guardados)}</span>
-        <span class="tag tag-purple">📊 Eng: ${p.engagement_rate||0}%</span>
-        <span class="tag tag-gray">🌐 ${p.alcance_no_seg_pct||0}% no seg.</span>
+        <span class="tag tag-blue">💬 ${fmtNum(p.n_coms)} comentarios</span>
+        <span class="tag tag-green">✅ ${fmtNum(p.n_resp)} respondidos</span>
+        <span class="tag tag-purple">📊 Resp: ${p.tasa||0}%</span>
+        <span class="tag tag-gray">📌 ${p.plataforma}</span>
       </div>
       ${recs}
     </div>
   </div>`;
 }
 
-function buildSentBars(plats){
+function buildSentBars(sent){
+  const tot = Object.values(sent).reduce((a,b)=>a+b,0);
+  if(!tot) return '<p style="color:#aaa;font-size:13px">Sin datos de sentimiento</p>';
+  return Object.entries(sent).filter(([,v])=>v>0).map(([tipo,val])=>{
+    const pct = (val/tot*100).toFixed(1);
+    return `<div class="sent-row">
+      <div class="sent-row-head"><span style="font-weight:600">${tipo}</span><span style="color:#aaa">${val} (${pct}%)</span></div>
+      <div class="sent-bar-wrap"><div class="sent-segment" style="width:${pct}%;background:${SENT_COLORS[tipo]||'#ccc'}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function buildSentBarsOld(plats){
   return Object.entries(plats).map(([nombre,d])=>{
     const s = d.sentimiento||{};
     const tot = Object.values(s).reduce((a,b)=>a+b,0);
@@ -303,12 +319,12 @@ function buildSentBars(plats){
 }
 
 function buildCrecBadges(plats){
-  return Object.entries(plats).filter(([,d])=>d.seguidores>0).map(([nombre,d])=>{
-    const crec = d.crecimiento_pct||0;
+  return Object.entries(plats).filter(([,d])=>d.total_comentarios>0).map(([nombre,d])=>{
+    const evol = d.evolucion_pct||0;
     return `<div class="crec-badge">
       <div class="crec-dot" style="background:${PLAT_COLORS[nombre]||'#1e7abf'}"></div>
       <span><strong>${nombre}</strong></span>
-      <span style="color:${crec>=0?'#27ae60':'#e74c3c'};font-weight:700">${crec>=0?'+':''}${crec}%</span>
+      <span style="color:${evol>=0?'#27ae60':'#e74c3c'};font-weight:700">${evol>=0?'+':''}${evol}%</span>
     </div>`;
   }).join('');
 }
@@ -368,7 +384,7 @@ function renderDashboard(data){
         </div>
         <div class="chart-card">
           <h3>Por plataforma</h3>
-          <div class="sent-bars">${hasData ? buildSentBars(plats) : '<p style="color:#aaa;font-size:13px">Sin datos</p>'}</div>
+          <div class="sent-bars">${buildSentBars(data.sentimiento||{})}</div>
         </div>
       </div>
     </div>

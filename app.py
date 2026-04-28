@@ -106,10 +106,10 @@ def init_db():
 def generar_conclusiones(plataformas, sentimiento, temas):
     conclusiones = []
 
-    total_pub  = sum(p.get("publicaciones", 0) for p in plataformas.values())
-    total_resp = sum(p.get("respondidas", 0) for p in plataformas.values())
-    if total_pub > 0:
-        tasa = total_resp / total_pub * 100
+    total_coms = sum(p.get("total_comentarios", 0) for p in plataformas.values())
+    total_resp = sum(p.get("respondidos", 0) for p in plataformas.values())
+    if total_coms > 0:
+        tasa = total_resp / total_coms * 100
         if tasa < 50:
             conclusiones.append({"tipo": "alerta", "texto": f"La tasa de respuesta global es del {tasa:.0f}%, por debajo del mínimo recomendado (70%). Se sugiere reforzar los turnos de atención digital."})
         elif tasa >= 80:
@@ -118,11 +118,11 @@ def generar_conclusiones(plataformas, sentimiento, temas):
             conclusiones.append({"tipo": "info", "texto": f"La tasa de respuesta global es del {tasa:.0f}%. Existe oportunidad de mejora para alcanzar el objetivo del 80%."})
 
     for plat, m in plataformas.items():
-        crec = m.get("crecimiento_pct", 0)
-        if crec > 10:
-            conclusiones.append({"tipo": "exito", "texto": f"{plat} muestra un crecimiento de seguidores del {crec:.1f}% frente al mes anterior, indicando mayor visibilidad institucional."})
-        elif crec < -2:
-            conclusiones.append({"tipo": "alerta", "texto": f"{plat} registra una disminución del {abs(crec):.1f}% en seguidores. Se recomienda revisar la frecuencia y relevancia del contenido publicado."})
+        evol = m.get("evolucion_pct", 0)
+        if evol > 20:
+            conclusiones.append({"tipo": "exito", "texto": f"{plat} muestra un incremento del {evol:.1f}% en volumen de comentarios frente al mes anterior."})
+        elif evol < -20:
+            conclusiones.append({"tipo": "alerta", "texto": f"{plat} registra una caída del {abs(evol):.1f}% en comentarios. Se recomienda revisar la estrategia de contenido."})
 
     total_sent = sum(sentimiento.values())
     if total_sent > 0:
@@ -130,23 +130,18 @@ def generar_conclusiones(plataformas, sentimiento, temas):
         pos  = sentimiento.get("Positivo", 0) / total_sent * 100
         crit = sentimiento.get("Crítico", 0) / total_sent * 100
         if crit > 20:
-            conclusiones.append({"tipo": "alerta", "texto": f"El {crit:.0f}% de los comentarios son críticos. Se recomienda activar protocolo de gestión de crisis digital y revisar casos urgentes."})
+            conclusiones.append({"tipo": "alerta", "texto": f"El {crit:.0f}% de los comentarios son críticos. Se recomienda activar protocolo de gestión de crisis digital."})
         elif neg > 40:
-            conclusiones.append({"tipo": "alerta", "texto": f"El {neg:.0f}% de los comentarios presentan tono negativo. Se sugiere reforzar la calidad de las respuestas y reducir tiempos de atención."})
+            conclusiones.append({"tipo": "alerta", "texto": f"El {neg:.0f}% de los comentarios presentan tono negativo. Se sugiere reforzar la calidad de las respuestas."})
         elif pos > 60:
-            conclusiones.append({"tipo": "exito", "texto": f"El {pos:.0f}% de los comentarios son positivos, reflejando una percepción favorable de la entidad en redes sociales."})
+            conclusiones.append({"tipo": "exito", "texto": f"El {pos:.0f}% de los comentarios son positivos, reflejando una percepción favorable de la entidad."})
 
     if temas:
         top = max(temas, key=temas.get)
         conclusiones.append({"tipo": "info", "texto": f"El tema con mayor volumen de menciones es '{top}' con {temas[top]} interacciones. Se recomienda priorizar contenido informativo sobre este tema."})
 
-    engs = [(plat, m.get("engagement_rate", 0)) for plat, m in plataformas.items() if m.get("engagement_rate", 0) > 0]
-    if engs:
-        mejor = max(engs, key=lambda x: x[1])
-        conclusiones.append({"tipo": "info", "texto": f"{mejor[0]} registra el mayor engagement rate con {mejor[1]:.1f}%, siendo la plataforma con mayor interacción relativa del período."})
-
     if not conclusiones:
-        conclusiones.append({"tipo": "info", "texto": "Ingresa métricas para este período para generar conclusiones automáticas."})
+        conclusiones.append({"tipo": "info", "texto": "Ingresa datos desde el formulario de comentarios para generar conclusiones automáticas."})
 
     return conclusiones
 
@@ -442,118 +437,103 @@ def eliminar_tema(tid):
 def api_dashboard():
     mes  = request.args.get("mes",  datetime.now().month, type=int)
     anio = request.args.get("anio", datetime.now().year,  type=int)
+    mes_ant  = mes - 1 if mes > 1 else 12
+    anio_ant = anio if mes > 1 else anio - 1
 
     conn = get_db()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT * FROM metricas_plataforma WHERE mes=%s AND anio=%s", (mes, anio))
-            met_rows = cur.fetchall()
-
-            cur.execute("""
-                SELECT * FROM publicaciones_dashboard
-                WHERE mes=%s AND anio=%s
-                ORDER BY (likes+comentarios+compartidos+guardados) DESC
-            """, (mes, anio))
-            pub_rows = cur.fetchall()
-
-            cur.execute("""
-                SELECT * FROM temas_dashboard WHERE mes=%s AND anio=%s
-                ORDER BY menciones DESC
-            """, (mes, anio))
-            tema_rows = cur.fetchall()
-
-            cur.execute("SELECT datos FROM envios")
-            envio_rows = cur.fetchall()
+            cur.execute("SELECT datos, fecha FROM envios ORDER BY fecha DESC")
+            rows = cur.fetchall()
     finally:
         conn.close()
 
-    plataformas = {}
-    for row in met_rows:
-        plat = row["plataforma"]
-        seg  = row["seguidores"] or 0
-        ant  = row["seguidores_ant"] or 0
-        total_int = (row["likes"] or 0) + (row["comentarios"] or 0) + (row["compartidos"] or 0) + (row["guardados"] or 0)
-        vis  = row["visualizaciones"] or 0
-        eng  = round(total_int / vis * 100, 2) if vis > 0 else (round(total_int / seg * 100, 2) if seg > 0 else 0)
-        crec = round((seg - ant) / ant * 100, 1) if ant > 0 else 0
-        pub  = row["publicaciones"] or 0
-        resp = row["respondidas"] or 0
-        plataformas[plat] = {
-            "seguidores":       seg,
-            "seguidores_ant":   ant,
-            "crecimiento_pct":  crec,
-            "visualizaciones":  vis,
-            "likes":            row["likes"] or 0,
-            "comentarios":      row["comentarios"] or 0,
-            "compartidos":      row["compartidos"] or 0,
-            "guardados":        row["guardados"] or 0,
-            "publicaciones":    pub,
-            "respondidas":      resp,
-            "tasa_respuesta":   round(resp / pub * 100, 1) if pub > 0 else 0,
-            "alcance_ext_pct":  row["alcance_ext_pct"] or 0,
-            "engagement_rate":  eng,
-            "sentimiento": {
-                "Positivo": row["sent_pos"] or 0,
-                "Negativo": row["sent_neg"] or 0,
-                "Neutro":   row["sent_neu"] or 0,
-                "Crítico":  row["sent_crit"] or 0,
-            },
-        }
-
-    virales, bajas, normales = [], [], []
-    for pub in pub_rows:
-        seg_plat  = plataformas.get(pub["plataforma"], {}).get("seguidores", 1) or 1
-        vis       = pub["visualizaciones"] or 0
-        total_int = (pub["likes"] or 0) + (pub["comentarios"] or 0) + (pub["compartidos"] or 0) + (pub["guardados"] or 0)
-        base      = vis if vis > 0 else seg_plat
-        eng       = round(total_int / base * 100, 2) if base > 0 else 0
-        alc_pct   = round((pub["alcance"] or 0) / seg_plat * 100, 1) if seg_plat > 0 else 0
-        entry = {
-            "id": pub["id"], "plataforma": pub["plataforma"], "texto": pub["texto"] or "",
-            "likes": pub["likes"] or 0, "comentarios": pub["comentarios"] or 0,
-            "compartidos": pub["compartidos"] or 0, "guardados": pub["guardados"] or 0,
-            "visualizaciones": vis, "engagement_rate": eng,
-            "alcance_no_seg_pct": alc_pct, "tipo": pub["tipo"],
-        }
-        if pub["tipo"] == "viral":
-            virales.append(entry)
-        elif pub["tipo"] == "bajo":
-            bajas.append(entry)
-        else:
-            normales.append(entry)
-
-    normales_sorted = sorted(normales, key=lambda x: x["engagement_rate"], reverse=True)
-    if not virales:
-        virales = normales_sorted[:3]
-    if not bajas:
-        bajas = normales_sorted[-3:][::-1] if len(normales_sorted) > 3 else []
-
-    temas = {row["tema"]: row["menciones"] for row in tema_rows}
-
-    sentimiento = {"Positivo": 0, "Negativo": 0, "Neutro": 0, "Crítico": 0}
-    for row in envio_rows:
+    def parse_mes_anio(s):
         try:
-            datos = json.loads(row["datos"])
-            for plat_pubs in datos.values():
-                for pub in plat_pubs:
-                    for com in pub.get("comentarios", []):
-                        em = com.get("emocion", "Neutro")
-                        sentimiento[em] = sentimiento.get(em, 0) + 1
+            dt = datetime.fromisoformat((s or "")[:10])
+            return dt.month, dt.year
         except Exception:
-            pass
-    for plat_data in plataformas.values():
-        for k, v in plat_data.get("sentimiento", {}).items():
-            sentimiento[k] = sentimiento.get(k, 0) + v
+            return None, None
 
-    conclusiones = generar_conclusiones(plataformas, sentimiento, temas)
+    def extraer(filas):
+        plats, pubs_list = {}, []
+        temas = {}
+        sent  = {"Positivo": 0, "Negativo": 0, "Neutro": 0, "Crítico": 0}
+        for row in filas:
+            try:
+                d = json.loads(row["datos"])
+            except Exception:
+                continue
+            for plat, pub_list in d.items():
+                for pub in pub_list:
+                    coms   = pub.get("comentarios", [])
+                    n_coms = len(coms)
+                    n_resp = sum(1 for c in coms if c.get("respondido"))
+                    tiempos = [c["tiempo_respuesta_min"] for c in coms
+                               if c.get("tiempo_respuesta_min") is not None]
+                    if plat not in plats:
+                        plats[plat] = {"total_comentarios": 0, "respondidos": 0,
+                                       "publicaciones": 0, "tiempos": []}
+                    plats[plat]["total_comentarios"] += n_coms
+                    plats[plat]["respondidos"]       += n_resp
+                    plats[plat]["publicaciones"]     += 1
+                    plats[plat]["tiempos"].extend(tiempos)
+                    pubs_list.append({
+                        "plataforma": plat,
+                        "texto":  pub.get("texto", ""),
+                        "n_coms": n_coms,
+                        "n_resp": n_resp,
+                        "tasa":   round(n_resp / n_coms * 100, 1) if n_coms > 0 else 0,
+                    })
+                    for c in coms:
+                        t = c.get("tema", "otro")
+                        temas[t] = temas.get(t, 0) + 1
+                        em = c.get("emocion", "Neutro")
+                        sent[em] = sent.get(em, 0) + 1
+        return plats, pubs_list, temas, sent
+
+    curr, prev = [], []
+    for row in rows:
+        m, a = parse_mes_anio(row["fecha"])
+        if m == mes and a == anio:
+            curr.append(row)
+        elif m == mes_ant and a == anio_ant:
+            prev.append(row)
+        elif m is None:
+            curr.append(row)
+
+    plats_c, pubs_c, temas_c, sent_c = extraer(curr)
+    plats_p, _, _, _                  = extraer(prev)
+
+    plataformas = {}
+    for plat, st in plats_c.items():
+        total = st["total_comentarios"]
+        resp  = st["respondidos"]
+        tms   = st["tiempos"]
+        prev_total = plats_p.get(plat, {}).get("total_comentarios", 0)
+        evol  = round((total - prev_total) / prev_total * 100, 1) if prev_total > 0 else 0
+        plataformas[plat] = {
+            "total_comentarios":   total,
+            "respondidos":         resp,
+            "publicaciones":       st["publicaciones"],
+            "tasa_respuesta":      round(resp / total * 100, 1) if total > 0 else 0,
+            "tiempo_promedio_min": round(sum(tms) / len(tms), 0) if tms else None,
+            "comentarios_mes_ant": prev_total,
+            "evolucion_pct":       evol,
+        }
+
+    virales = sorted(pubs_c, key=lambda x: x["n_coms"], reverse=True)[:5]
+    bajas   = sorted([p for p in pubs_c if p["n_coms"] > 0], key=lambda x: x["tasa"])[:5]
+    temas_s = dict(sorted(temas_c.items(), key=lambda x: x[1], reverse=True))
+    conclusiones = generar_conclusiones(plataformas, sent_c, temas_s)
 
     return jsonify({
         "mes": mes, "anio": anio,
         "plataformas": plataformas,
-        "virales": virales[:5],
-        "bajas": bajas[:5],
-        "temas": temas,
-        "sentimiento": sentimiento,
+        "virales":     virales,
+        "bajas":       bajas,
+        "temas":       temas_s,
+        "sentimiento": sent_c,
         "conclusiones": conclusiones,
     })
 
