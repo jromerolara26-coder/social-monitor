@@ -124,85 +124,148 @@ TEMAS = {
 
 EMOCIONES = {
     "Crítico": [
-        # Denuncias formales
+        # Denuncias y acciones legales
         "queja", "reclamo", "denuncia", "tutela", "demanda", "acción legal",
         "accion legal", "derecho de petición", "derecho de peticion",
         "superintendencia", "defensoría", "defensoria", "procuraduría",
         "procuraduria", "contraloría", "contraloria", "personería", "personeria",
-        # Fraude / corrupción
+        "veeduría", "veeduria", "ente de control", "organismos de control",
+        # Fraude y corrupción
         "estafa", "fraude", "robo", "hurto", "corrupción", "corrupcion",
-        "malversación", "malversacion", "peculado", "desfalco",
-        # Calificativos graves
+        "malversación", "malversacion", "peculado", "desfalco", "saqueo",
+        # Calificativos institucionales graves
         "inaceptable", "indignante", "vergüenza", "verguenza", "escándalo",
         "escandalo", "aberración", "aberracion", "injusticia", "ilegal",
-        "inconstitucional", "arbitrario",
-        # Conducta institucional
+        "inconstitucional", "arbitrario", "arbitraria", "impunidad",
+        "irresponsable", "irresponsabilidad", "incompetente", "incompetencia",
+        # Conducta institucional negativa
         "abuso", "negligencia", "perjuicio", "incumplimiento", "engaño",
         "engano", "mentira", "falsedad", "manipulación", "manipulacion",
         "discriminación", "discriminacion", "acoso", "amenaza",
-        # Expresiones fuertes de malestar
-        "indignado", "indignada", "furioso", "furiosa", "desesperado",
-        "desesperada", "impotente", "rabia", "asco", "repudio",
+        "no hacen lo que les corresponde", "no cumplen su función",
+        "no cumplen su funcion", "entidad inútil", "entidad inutil",
+        # Expresiones de hartazgo extremo
+        "ya basta", "hasta cuándo", "hasta cuando", "hasta que hora",
+        "hasta cuándo más", "hasta cuando mas", "basta ya",
+        "no aguanto más", "no aguanto mas", "no soporto más", "no soporto mas",
+        "indignado", "indignada", "furioso", "furiosa", "furiosos",
+        "desesperado", "desesperada", "impotente", "rabia", "asco", "repudio",
         "nunca más", "nunca mas", "no vuelvo", "los denuncio",
         "voy a demandar", "tomaré acciones", "tomare acciones",
+        "tomaremos acciones", "procederé legalmente", "procedere legalmente",
+        # Críticas al sistema educativo / gobierno
+        "de qué sirve", "de que sirve", "para qué sirve", "para que sirve",
+        "de qué vale", "de que vale", "educación digna", "educacion digna",
+        "derecho a la educación", "derecho a la educacion",
+        "sin como estudiar", "sin poder estudiar", "sin acceso a la educación",
+        "sin acceso a la educacion", "universidad pública en riesgo",
+        "universidad publica en riesgo",
+        # Pagos y subsidios
+        "paguen el subsidio", "paguen el dinero", "paguen lo que deben",
+        "dónde está mi subsidio", "donde esta mi subsidio",
+        "dónde está mi dinero", "donde esta mi dinero",
+        "me robaron el subsidio", "no pagan", "siguen sin pagar",
+        # Fallos de proceso
+        "proceso fallido", "proceso mal hecho", "trámite ineficiente",
+        "tramite ineficiente", "proceso kafkiano", "burocracia excesiva",
+        "trabas burocráticas", "trabas burocraticas",
     ],
     "Negativo": [
-        # Calificativos negativos
+        # Calificativos de calidad
         "malo", "mala", "mal ", "terrible", "pésimo", "pesimo", "horrible",
         "fatal", "deficiente", "deplorable", "lamentable", "desastroso",
-        "desastrosa", "pobre", "mediocre", "nefasto", "nefasta",
-        # Estados emocionales
+        "desastrosa", "pobre", "mediocre", "nefasto", "nefasta", "malísimo",
+        "malisimo", "malísima", "malisima", "muy malo", "muy mala",
+        "paupérrimo", "pauperrimo",
+        # Estados emocionales negativos
         "molesto", "molesta", "frustrado", "frustrada", "decepcionado",
         "decepcionada", "decepción", "decepcion", "triste", "angustiado",
         "angustiada", "desesperanzado", "preocupado", "preocupada",
         "cansado", "cansada", "harto", "harta", "agotado", "agotada",
         "estresado", "estresada", "desmotivado", "desmotivada",
+        "confundido", "confundida", "perdido", "perdida", "desorientado",
+        "desorientada", "abrumado", "abrumada",
         # Insatisfacción con el servicio
         "insatisfecho", "insatisfecha", "inconformidad", "malestar",
         "no funciona", "no sirve", "no carga", "no responden",
         "nadie responde", "sin respuesta", "ignorando", "ignorado",
         "ignorada", "abandonado", "abandonada", "olvidado", "olvidada",
+        "no me atienden", "no me ayudan", "no me solucionan",
+        "no dan razón", "no dan razon", "no dan información",
+        "no dan informacion", "no explican", "no orientan",
         # Tiempos y demoras
         "demora", "demorado", "retraso", "retrasado", "tardanza",
         "lento", "lenta", "tardado", "tardada", "siglos", "eternidad",
         "hace días", "hace dias", "hace semanas", "hace meses",
-        "llevo esperando", "sigo esperando", "aún no", "aun no",
-        "todavía no", "todavia no", "sin novedad", "sin solución",
-        "sin solucion",
+        "hace un año", "hace años", "hace anos", "llevo esperando",
+        "sigo esperando", "aún no", "aun no", "todavía no", "todavia no",
+        "sin novedad", "sin solución", "sin solucion", "sin respuesta",
+        "semanas sin", "meses sin", "años sin", "anos sin",
+        # Problemas con plataforma
+        "no carga la página", "no carga la pagina", "portal caído",
+        "portal caido", "sistema caído", "sistema caido", "error en el sistema",
+        "error en la página", "error en la pagina", "no puedo ingresar",
+        "no puedo acceder", "contraseña no funciona", "contrasena no funciona",
+        "no me deja", "me bloquea", "me saca", "se cae",
         # Problemas específicos ICETEX
         "bloqueado", "bloqueada", "suspendido", "suspendida", "cancelado",
         "cancelada", "rechazado", "rechazada", "negado", "negada",
         "desembolso no llega", "no han desembolsado", "no llegó",
         "no llego", "cobro incorrecto", "cobro errado", "me cobraron mal",
-        "deuda incorrecta", "saldo incorrecto",
+        "deuda incorrecta", "saldo incorrecto", "beca no llegó",
+        "beca no llego", "subsidio no llegó", "subsidio no llego",
+        "no me renovaron", "no me legalizaron", "me negaron",
+        "no califico", "no calificó", "no calificara",
+        # Falta de información / claridad
+        "nadie sabe", "nadie me dice", "no hay información",
+        "no hay informacion", "información confusa", "informacion confusa",
+        "información contradictoria", "informacion contradictoria",
+        "cambian los requisitos", "cambian las reglas",
+        "no es claro", "no es clara", "muy confuso", "muy confusa",
     ],
     "Positivo": [
         # Agradecimiento
-        "gracias", "muchas gracias", "mil gracias", "agradecido", "agradecida",
-        "agradezco", "agradecemos", "aprecio", "apreciamos", "reconozco",
-        "feliz", "contento", "contenta", "satisfecho", "satisfecha",
+        "gracias", "muchas gracias", "mil gracias", "infinitas gracias",
+        "agradecido", "agradecida", "agradezco", "agradecemos",
+        "aprecio", "apreciamos", "reconozco", "reconocemos",
+        "feliz", "felices", "contento", "contenta", "contentos",
+        "satisfecho", "satisfecha", "satisfechos",
         # Calificativos positivos
         "excelente", "genial", "perfecto", "perfecta", "bueno", "buena",
         "bien ", "muy bien", "maravilloso", "maravillosa", "increíble",
-        "increible", "fantástico", "fantastica", "fantástica", "estupendo",
-        "estupenda", "espectacular", "extraordinario", "extraordinaria",
-        "sobresaliente", "notable", "destacado", "destacada",
-        # Encantado / sorprendido positivamente
+        "increible", "fantástico", "fantastico", "fantástica", "fantastica",
+        "estupendo", "estupenda", "espectacular", "extraordinario",
+        "extraordinaria", "sobresaliente", "notable", "destacado",
+        "destacada", "impecable", "exquisito", "de primera",
+        # Reconocimiento al equipo
         "encantado", "encantada", "sorprendido positivamente", "impresionado",
         "impresionada", "felicitaciones", "felicito", "felicitamos",
         "bravo", "bien hecho", "muy profesional", "muy amable",
+        "muy cordial", "muy atento", "muy atenta", "muy eficiente",
+        "excelente equipo", "gran equipo", "buen equipo",
         # Resolución efectiva
         "resolvieron", "solucionaron", "atendieron", "respondieron rápido",
         "respondieron rapido", "me ayudaron", "me orientaron", "lo lograron",
         "cumplieron", "eficiente", "eficientes", "eficaz", "buen servicio",
         "excelente servicio", "buen trabajo", "excelente atención",
         "excelente atencion", "gran apoyo", "muy eficaz",
+        "lo solucionaron", "lo resolvieron", "me dieron solución",
+        "me dieron solucion", "me respondieron a tiempo",
+        # Proceso ágil
+        "rápido", "rapido", "ágil", "agil", "inmediato", "sin demora",
+        "en tiempo", "a tiempo", "puntual", "sin problemas",
+        "sin inconvenientes", "todo bien", "sin novedad positiva",
+        "fácil", "facil", "sencillo", "sencilla", "claro", "clara",
+        "bien explicado", "bien explicada", "muy claro", "muy clara",
         # Experiencia positiva con ICETEX
         "me aprobaron", "me desembolsaron", "recibí el dinero",
         "recibi el dinero", "llegó el desembolso", "llego el desembolso",
-        "me renovaron", "me legalizaron", "proceso exitoso",
+        "recibí el subsidio", "recibi el subsidio", "llegó la beca",
+        "llego la beca", "me renovaron", "me legalizaron",
+        "proceso exitoso", "trámite exitoso", "tramite exitoso",
         "trámite rápido", "tramite rapido", "fácil y rápido",
-        "facil y rapido", "muy claro", "muy clara",
+        "facil y rapido", "sin complicaciones", "sin trámites engorrosos",
+        "sin tramites engorrosos", "me apoyaron", "me asesoraron bien",
     ],
 }
 
@@ -273,40 +336,133 @@ def clasificar_tema(texto: str) -> str:
 
 def detectar_emocion(texto: str) -> str:
     t = texto.lower()
+    conteos = {}
     for emocion in ["Crítico", "Negativo", "Positivo"]:
-        if any(p in t for p in EMOCIONES[emocion]):
-            return emocion
+        conteos[emocion] = sum(1 for p in EMOCIONES[emocion] if p in t)
+    # Crítico tiene peso doble para priorizar casos graves
+    conteos["Crítico"] *= 2
+    max_cat = max(conteos, key=conteos.get)
+    if conteos[max_cat] > 0:
+        return max_cat
     return "Neutro"
+
+
+# Frases que indican que la respuesta redirige sin resolver
+FRASES_REDIRECCION = [
+    "escríbenos al", "escribenos al", "envíanos un mensaje", "envianos un mensaje",
+    "comunícate al", "comunicate al", "llámanos al", "llamanos al",
+    "ingresa a nuestra página", "ingresa a nuestra pagina",
+    "visita nuestro sitio", "visita nuestra web",
+    "te invitamos a ingresar", "por favor ingresa",
+    "puedes ingresar a", "ingresa al portal",
+    "escríbenos por", "escribenos por", "contáctanos por",
+    "contactanos por", "mediante mensaje directo", "por mensaje privado",
+    "por mp", "al correo", "al número", "al numero",
+]
+
+# Palabras clave que muestran que la respuesta aborda el tema real
+INDICADORES_RESOLUCION = [
+    "hemos revisado", "hemos verificado", "revisamos tu caso",
+    "verificamos tu caso", "tu caso fue", "procedimos a",
+    "ya fue procesado", "ya fue actualizado", "ya fue corregido",
+    "el desembolso", "el subsidio", "la beca", "el crédito",
+    "tu solicitud", "tu radicado", "número de radicado",
+    "el proceso de", "los requisitos son", "los pasos son",
+    "debes", "debes ingresar", "debes adjuntar", "el plazo es",
+    "la fecha límite", "la fecha limite", "tienes hasta",
+    "te informamos que", "te comunicamos que", "te confirmamos que",
+    "fue aprobado", "fue aprobada", "está en proceso", "esta en proceso",
+    "en revisión", "en revision", "en trámite", "en tramite",
+]
 
 
 def evaluar_calidad(comentario: str, respuesta: str) -> Dict:
     """
-    Score: 0=sin respuesta  1=genérica  2=parcial  3=específica
-    Considera: frases genéricas, coincidencia de tema, palabras del comentario
-    en la respuesta, longitud.
+    Score 0-4:
+      0 = Sin respuesta
+      1 = Genérica / solo redirige sin resolver
+      2 = Parcial / reconoce el tema pero no resuelve
+      3 = Específica / aborda el tema con información concreta
+      4 = Excelente / resuelve y confirma acción tomada
     """
     if not respuesta or not respuesta.strip():
-        return {"score": 0, "nivel": "Sin respuesta", "motivo": "ICETEX no respondió"}
+        return {
+            "score": 0, "nivel": "Sin respuesta",
+            "motivo": "ICETEX no respondió al comentario",
+            "relevancia_pct": 0
+        }
 
+    c = comentario.lower()
     r = respuesta.lower()
-    genericas = sum(1 for f in FRASES_GENERICAS if f in r)
-    tema = clasificar_tema(comentario)
-    palabras_tema = TEMAS.get(tema, [])
-    coincidencias_tema = sum(1 for p in palabras_tema if p in r)
     longitud = len(respuesta.strip())
 
-    palabras_com = {w for w in comentario.lower().split() if len(w) > 3 and w not in STOPWORDS}
-    coincidencias_directas = sum(1 for p in palabras_com if p in r)
+    # Contar frases genéricas en la respuesta
+    n_genericas   = sum(1 for f in FRASES_GENERICAS   if f in r)
+    # Contar si redirige a otro canal sin resolver
+    n_redireccion = sum(1 for f in FRASES_REDIRECCION  if f in r)
+    # Contar indicadores de resolución real
+    n_resolucion  = sum(1 for f in INDICADORES_RESOLUCION if f in r)
 
-    if genericas >= 2 and coincidencias_tema == 0 and coincidencias_directas == 0:
-        return {"score": 1, "nivel": "Genérica", "motivo": "Respuesta automática sin abordar el tema"}
-    if genericas >= 1 and longitud < 120 and coincidencias_directas < 2:
-        return {"score": 1, "nivel": "Genérica", "motivo": "Respuesta corta y genérica"}
-    if (coincidencias_tema > 0 or coincidencias_directas >= 3) and longitud > 150:
-        return {"score": 3, "nivel": "Específica", "motivo": "Respuesta aborda el tema del usuario"}
-    if coincidencias_directas >= 2 or (longitud > 200 and genericas == 0):
-        return {"score": 3, "nivel": "Específica", "motivo": "Respuesta personalizada"}
-    return {"score": 2, "nivel": "Parcial", "motivo": "Respuesta presente pero poco específica"}
+    # Tema del comentario y cuánto lo cubre la respuesta
+    tema = clasificar_tema(comentario)
+    palabras_tema = TEMAS.get(tema, [])
+    n_tema_en_resp = sum(1 for p in palabras_tema if p in r)
+
+    # Palabras clave del comentario (sustantivos/verbos relevantes)
+    palabras_com = {w for w in c.split() if len(w) > 3 and w not in STOPWORDS}
+    n_palabras_com_en_resp = sum(1 for p in palabras_com if p in r)
+    relevancia_pct = round(
+        (n_palabras_com_en_resp / len(palabras_com) * 100) if palabras_com else 0, 1
+    )
+
+    # Lógica de scoring
+    if n_genericas >= 2 and n_resolucion == 0 and n_tema_en_resp == 0:
+        return {
+            "score": 1, "nivel": "Genérica",
+            "motivo": "Respuesta automática: no aborda el tema del usuario",
+            "relevancia_pct": relevancia_pct
+        }
+
+    if n_redireccion >= 1 and n_resolucion == 0 and longitud < 200:
+        return {
+            "score": 1, "nivel": "Genérica",
+            "motivo": "Solo redirige a otro canal sin dar información útil",
+            "relevancia_pct": relevancia_pct
+        }
+
+    if n_resolucion >= 2 and (n_tema_en_resp >= 1 or n_palabras_com_en_resp >= 3) and longitud > 200:
+        return {
+            "score": 4, "nivel": "Excelente",
+            "motivo": f"Respuesta resuelve y confirma acción. Relevancia: {relevancia_pct}%",
+            "relevancia_pct": relevancia_pct
+        }
+
+    if (n_tema_en_resp >= 1 or n_palabras_com_en_resp >= 3) and longitud > 150:
+        return {
+            "score": 3, "nivel": "Específica",
+            "motivo": f"Respuesta aborda el tema del usuario. Relevancia: {relevancia_pct}%",
+            "relevancia_pct": relevancia_pct
+        }
+
+    if n_palabras_com_en_resp >= 2 or (longitud > 200 and n_genericas == 0):
+        return {
+            "score": 3, "nivel": "Específica",
+            "motivo": f"Respuesta personalizada. Relevancia: {relevancia_pct}%",
+            "relevancia_pct": relevancia_pct
+        }
+
+    if n_genericas >= 1 and longitud < 120:
+        return {
+            "score": 1, "nivel": "Genérica",
+            "motivo": "Respuesta corta y genérica sin abordar la solicitud",
+            "relevancia_pct": relevancia_pct
+        }
+
+    return {
+        "score": 2, "nivel": "Parcial",
+        "motivo": f"Reconoce el tema pero no da solución concreta. Relevancia: {relevancia_pct}%",
+        "relevancia_pct": relevancia_pct
+    }
 
 
 # ──────────────────────────────────────────────────────────
