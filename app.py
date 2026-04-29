@@ -145,6 +145,98 @@ def generar_conclusiones(plataformas, sentimiento, temas):
 
     return conclusiones
 
+# ── Detección de sentimiento server-side
+_EMOCIONES = {
+    "Crítico": [
+        "queja","reclamo","denuncia","tutela","demanda","acción legal","accion legal",
+        "derecho de petición","derecho de peticion","superintendencia","defensoría","defensoria",
+        "procuraduría","procuraduria","contraloría","contraloria","personería","personeria",
+        "estafa","fraude","robo","hurto","corrupción","corrupcion","malversación","malversacion",
+        "inaceptable","indignante","vergüenza","verguenza","escándalo","escandalo","aberración",
+        "aberracion","injusticia","ilegal","inconstitucional","arbitrario","arbitraria","impunidad",
+        "irresponsable","irresponsabilidad","incompetente","incompetencia",
+        "abuso","negligencia","perjuicio","incumplimiento","engaño","engano","mentira","falsedad",
+        "manipulación","manipulacion","discriminación","discriminacion","acoso","amenaza",
+        "no hacen lo que les corresponde","no cumplen su función","no cumplen su funcion",
+        "ya basta","hasta cuándo","hasta cuando","basta ya","no aguanto más","no aguanto mas",
+        "indignado","indignada","furioso","furiosa","desesperado","desesperada","impotente",
+        "rabia","asco","repudio","nunca más","nunca mas","no vuelvo","los denuncio",
+        "voy a demandar","tomaré acciones","tomare acciones",
+        "de qué sirve","de que sirve","para qué sirve","para que sirve",
+        "educación digna","educacion digna","derecho a la educación","derecho a la educacion",
+        "paguen el subsidio","paguen el dinero","no pagan","siguen sin pagar",
+        "proceso fallido","burocracia excesiva","trabas burocráticas","trabas burocraticas",
+        "sin como estudiar","sin poder estudiar",
+    ],
+    "Negativo": [
+        "malo","mala","mal ","terrible","pésimo","pesimo","horrible","fatal","deficiente",
+        "deplorable","lamentable","desastroso","desastrosa","pobre","mediocre","nefasto","nefasta",
+        "malísimo","malisimo","muy malo","muy mala","paupérrimo","pauperrimo",
+        "molesto","molesta","frustrado","frustrada","decepcionado","decepcionada","decepción",
+        "decepcion","triste","angustiado","angustiada","preocupado","preocupada",
+        "cansado","cansada","harto","harta","agotado","agotada","estresado","estresada",
+        "desmotivado","desmotivada","confundido","confundida","perdido","perdida",
+        "insatisfecho","insatisfecha","inconformidad","malestar",
+        "no funciona","no sirve","no carga","no responden","nadie responde","sin respuesta",
+        "ignorando","ignorado","ignorada","abandonado","abandonada","olvidado","olvidada",
+        "no me atienden","no me ayudan","no me solucionan","no dan razón","no dan razon",
+        "no dan información","no dan informacion","no explican",
+        "demora","demorado","retraso","retrasado","tardanza","lento","lenta",
+        "hace días","hace dias","hace semanas","hace meses","hace un año",
+        "llevo esperando","sigo esperando","aún no","aun no","todavía no","todavia no",
+        "sin novedad","sin solución","sin solucion","semanas sin","meses sin",
+        "bloqueado","bloqueada","suspendido","suspendida","cancelado","cancelada",
+        "rechazado","rechazada","negado","negada","no han desembolsado","no llegó","no llego",
+        "cobro incorrecto","cobro errado","me cobraron mal","deuda incorrecta","saldo incorrecto",
+        "beca no llegó","beca no llego","subsidio no llegó","subsidio no llego",
+        "no me renovaron","no me legalizaron","me negaron",
+        "nadie sabe","nadie me dice","no hay información","no hay informacion",
+        "información confusa","informacion confusa","muy confuso","muy confusa",
+        "no es claro","no es clara","cambian los requisitos","cambian las reglas",
+        "portal caído","portal caido","sistema caído","sistema caido","error en el sistema",
+        "no puedo ingresar","no puedo acceder","no me deja","me bloquea",
+    ],
+    "Positivo": [
+        "gracias","muchas gracias","mil gracias","infinitas gracias",
+        "agradecido","agradecida","agradezco","agradecemos","aprecio","apreciamos",
+        "feliz","felices","contento","contenta","satisfecho","satisfecha",
+        "excelente","genial","perfecto","perfecta","bueno","buena","bien ","muy bien",
+        "maravilloso","maravillosa","increíble","increible","fantástico","fantastico",
+        "estupendo","estupenda","espectacular","extraordinario","extraordinaria",
+        "sobresaliente","notable","impecable",
+        "encantado","encantada","felicitaciones","felicito","bravo","bien hecho",
+        "muy profesional","muy amable","muy cordial","muy atento","muy atenta",
+        "resolvieron","solucionaron","atendieron","respondieron rápido","respondieron rapido",
+        "me ayudaron","me orientaron","lo lograron","cumplieron","eficiente","eficientes",
+        "eficaz","buen servicio","excelente servicio","buen trabajo","excelente atención",
+        "excelente atencion","gran apoyo","muy eficaz","lo solucionaron","lo resolvieron",
+        "me dieron solución","me dieron solucion","me respondieron a tiempo",
+        "rápido","rapido","ágil","agil","inmediato","sin demora","a tiempo","sin problemas",
+        "sin inconvenientes","todo bien","fácil","facil","sencillo","sencilla","claro","clara",
+        "bien explicado","muy claro","muy clara",
+        "me aprobaron","me desembolsaron","recibí el dinero","recibi el dinero",
+        "llegó el desembolso","llego el desembolso","recibí el subsidio","recibi el subsidio",
+        "llegó la beca","llego la beca","me renovaron","me legalizaron","proceso exitoso",
+        "sin complicaciones","me apoyaron","me asesoraron bien",
+    ],
+}
+
+def detectar_emocion_srv(texto: str) -> str:
+    t = (texto or "").lower()
+    conteos = {}
+    for em in ["Crítico", "Negativo", "Positivo"]:
+        conteos[em] = sum(1 for p in _EMOCIONES[em] if p in t)
+    conteos["Crítico"] *= 2  # peso doble para casos graves
+    mejor = max(conteos, key=conteos.get)
+    return mejor if conteos[mejor] > 0 else "Neutro"
+
+def reprocesar_emociones(datos: dict) -> dict:
+    for plat, pubs in datos.items():
+        for pub in pubs:
+            for c in pub.get("comentarios", []):
+                c["emocion"] = detectar_emocion_srv(c.get("texto", ""))
+    return datos
+
 # ── Helpers originales
 def get_ip():
     try:
@@ -218,14 +310,15 @@ def enviar():
     fb_cuenta = meta.get("fb_cuenta", "")
     ig_cuenta = meta.get("ig_cuenta", "")
     sla       = json.dumps(meta.get("sla", {}))
-    datos_str = json.dumps({
+    datos_raw = {
         "twitter":   body.get("twitter",   []),
         "facebook":  body.get("facebook",  []),
         "instagram": body.get("instagram", []),
         "linkedin":  body.get("linkedin",  []),
         "tiktok":    body.get("tiktok",    []),
         "youtube":   body.get("youtube",   []),
-    }, ensure_ascii=False)
+    }
+    datos_str = json.dumps(reprocesar_emociones(datos_raw), ensure_ascii=False)
     conn = get_db()
     try:
         with conn.cursor() as cur:
@@ -438,6 +531,28 @@ def ingresar_metricas():
                            error=error,
                            mes_actual=datetime.now().month,
                            anio_actual=datetime.now().year)
+
+@app.route("/admin/reprocesar-sentimiento", methods=["POST"])
+def reprocesar_sentimiento():
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, datos FROM envios")
+            rows = cur.fetchall()
+        actualizados = 0
+        for row in rows:
+            try:
+                datos = reprocesar_emociones(json.loads(row["datos"]))
+                with conn.cursor() as cur:
+                    cur.execute("UPDATE envios SET datos=%s WHERE id=%s",
+                                (json.dumps(datos, ensure_ascii=False), row["id"]))
+                actualizados += 1
+            except Exception:
+                continue
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "mensaje": f"Sentimiento reprocesado en {actualizados} envíos."})
 
 @app.route("/admin/envio/<int:eid>")
 def get_envio(eid):

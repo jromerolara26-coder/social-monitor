@@ -117,6 +117,7 @@ td{padding:9px 12px;vertical-align:middle}
     </p>
     <div class="acciones">
       <button class="btn btn-s" onclick="generar()">📊 Generar reporte ahora</button>
+      <button class="btn btn-e" onclick="reprocesar()">😊 Reprocesar sentimiento</button>
       {% if reporte_existe %}
       <a href="/reporte" target="_blank" class="btn btn-p">👁️ Ver reporte</a>
       <a href="/descargar-excel" class="btn btn-p">📥 Descargar Excel</a>
@@ -200,6 +201,22 @@ const PLAT_LABELS = {
   linkedin:'💼 LinkedIn', tiktok:'🎵 TikTok', youtube:'▶️ YouTube'
 };
 const EM_OPTS = ['Positivo','Negativo','Crítico','Neutro'];
+
+async function reprocesar(){
+  const btn = document.querySelectorAll('.btn-e')[0];
+  btn.disabled=true; btn.textContent='⏳ Reprocesando...';
+  try{
+    const r=await fetch('/admin/reprocesar-sentimiento',{method:'POST'});
+    const d=await r.json();
+    const el=document.getElementById('resultado');
+    el.className=d.ok?'r-ok':'r-err';
+    el.textContent=(d.ok?'✅ ':'❌ ')+d.mensaje;
+    el.style.display='block';
+  }catch(e){
+    const el=document.getElementById('resultado');
+    el.className='r-err';el.textContent='❌ Error: '+e.message;el.style.display='block';
+  }finally{btn.disabled=false;btn.textContent='😊 Reprocesar sentimiento';}
+}
 
 async function generar(){
   const btn=document.querySelector('.btn-s');

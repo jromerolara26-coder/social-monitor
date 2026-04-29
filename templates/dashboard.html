@@ -321,6 +321,39 @@ function buildPost(p, tipo){
   </div>`;
 }
 
+function buildSentResumen(sent){
+  const tot = Object.values(sent).reduce((a,b)=>a+b,0);
+  if(!tot) return '<div class="empty-state" style="padding:20px"><p>Sin datos de sentimiento aún.<br><a href="/formulario" class="btn-primary" style="margin-top:10px;display:inline-block">Ingresar datos</a></p></div>';
+  const pos  = sent['Positivo']||0;
+  const neg  = sent['Negativo']||0;
+  const crit = sent['Crítico']||0;
+  const neu  = sent['Neutro']||0;
+  const pct  = v => (v/tot*100).toFixed(1);
+  const ICONS = {Positivo:'😊',Negativo:'😞',Crítico:'😡',Neutro:'😐'};
+  const COLORS = {Positivo:'#dcfce7|#15803d',Negativo:'#fff7ed|#c2410c',Crítico:'#fee2e2|#dc2626',Neutro:'#f3f4f6|#4b5563'};
+  const cards = ['Crítico','Negativo','Positivo','Neutro'].map(k=>{
+    const [bg,color] = COLORS[k].split('|');
+    const val = sent[k]||0;
+    return `<div style="background:${bg};border-radius:14px;padding:16px 20px;text-align:center;border:1px solid ${color}33">
+      <div style="font-size:28px;margin-bottom:6px">${ICONS[k]}</div>
+      <div style="font-size:22px;font-weight:800;color:${color}">${val}</div>
+      <div style="font-size:12px;font-weight:700;color:${color};margin-top:2px">${pct(val)}%</div>
+      <div style="font-size:11px;color:#666;margin-top:4px">${k}</div>
+    </div>`;
+  }).join('');
+  const dominante = Object.entries(sent).reduce((a,b)=>b[1]>a[1]?b:a,['Neutro',0])[0];
+  const msgs = {
+    Positivo:'Los usuarios expresan satisfacción. ¡Buen trabajo en la atención!',
+    Negativo:'Hay malestar en los comentarios. Revisar tiempos y calidad de respuesta.',
+    Crítico:'Nivel crítico de inconformidad. Se recomienda activar protocolo de gestión.',
+    Neutro:'La mayoría de comentarios son informativos o consultas generales.',
+  };
+  return `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">${cards}</div>
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e3a5f">
+      <strong>📋 Diagnóstico:</strong> Sentimiento dominante: <strong>${dominante}</strong> (${pct(sent[dominante]||0)}% de ${tot} comentarios). ${msgs[dominante]}
+    </div>`;
+}
+
 function buildSentBars(sent){
   const tot = Object.values(sent).reduce((a,b)=>a+b,0);
   if(!tot) return '<p style="color:#aaa;font-size:13px">Sin datos de sentimiento</p>';
@@ -417,14 +450,15 @@ function renderDashboard(data){
 
     <div id="sec-sentimiento" class="section">
       <div class="section-title">😊 Análisis de Sentimiento</div>
+      ${buildSentResumen(data.sentimiento||{})}
       <div class="sent-grid">
         <div class="chart-card">
-          <h3>Distribución global</h3>
+          <h3>Distribución global de comentarios</h3>
           <div class="chart-wrap"><canvas id="chart-sent"></canvas></div>
         </div>
         <div class="chart-card">
-          <h3>Por plataforma</h3>
-          <div class="sent-bars">${buildSentBars(data.sentimiento||{})}</div>
+          <h3>Detalle por categoría</h3>
+          <div class="sent-bars" style="padding-top:8px">${buildSentBars(data.sentimiento||{})}</div>
         </div>
       </div>
     </div>

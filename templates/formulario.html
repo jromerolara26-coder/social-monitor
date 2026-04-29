@@ -139,13 +139,81 @@ function calidad(resp){
 }
 function emocion(txt){
   const t=(txt||'').toLowerCase();
-  const CRIT=['queja','reclamo','estafa','inaceptable','indignante','fraude','denuncia'];
-  const NEG=['malo','terrible','pésimo','pesimo','horrible','frustrado','decepción','error','demora'];
-  const POS=['gracias','excelente','genial','perfecto','satisfecho','encantado','agradecido'];
-  if(CRIT.some(w=>t.includes(w))) return 'Crítico';
-  if(NEG.some(w=>t.includes(w)))  return 'Negativo';
-  if(POS.some(w=>t.includes(w)))  return 'Positivo';
-  return 'Neutro';
+  const CRIT=[
+    'queja','reclamo','denuncia','tutela','demanda','acción legal','accion legal',
+    'derecho de petición','derecho de peticion','superintendencia','defensoría','defensoria',
+    'procuraduría','procuraduria','contraloría','contraloria','personería','personeria',
+    'estafa','fraude','robo','hurto','corrupción','corrupcion','malversación','malversacion',
+    'inaceptable','indignante','vergüenza','verguenza','escándalo','escandalo',
+    'injusticia','ilegal','inconstitucional','arbitrario','arbitraria','impunidad',
+    'irresponsable','incompetente','negligencia','abuso','perjuicio','incumplimiento',
+    'engaño','engano','mentira','falsedad','manipulación','manipulacion',
+    'discriminación','discriminacion','acoso','amenaza',
+    'no hacen lo que les corresponde','ya basta','hasta cuándo','hasta cuando',
+    'basta ya','no aguanto más','no aguanto mas',
+    'indignado','indignada','furioso','furiosa','desesperado','desesperada',
+    'rabia','asco','repudio','nunca más','nunca mas','no vuelvo','los denuncio',
+    'voy a demandar','tomaré acciones','tomare acciones',
+    'de qué sirve','de que sirve','para qué sirve','para que sirve',
+    'educación digna','educacion digna','paguen el subsidio','paguen el dinero',
+    'no pagan','siguen sin pagar','trabas burocráticas','trabas burocraticas',
+    'sin como estudiar','sin poder estudiar',
+  ];
+  const NEG=[
+    'malo','mala','mal ','terrible','pésimo','pesimo','horrible','fatal','deficiente',
+    'deplorable','lamentable','desastroso','desastrosa','pobre','mediocre','nefasto','nefasta',
+    'molesto','molesta','frustrado','frustrada','decepcionado','decepcionada','decepción','decepcion',
+    'triste','angustiado','angustiada','preocupado','preocupada',
+    'cansado','cansada','harto','harta','agotado','agotada','estresado','estresada',
+    'desmotivado','desmotivada','confundido','confundida',
+    'insatisfecho','insatisfecha','inconformidad','malestar',
+    'no funciona','no sirve','no carga','no responden','nadie responde','sin respuesta',
+    'ignorando','ignorado','ignorada','abandonado','abandonada','olvidado','olvidada',
+    'no me atienden','no me ayudan','no me solucionan','no dan razón','no dan razon',
+    'no dan información','no dan informacion','no explican',
+    'demora','demorado','retraso','retrasado','tardanza','lento','lenta',
+    'hace días','hace dias','hace semanas','hace meses','hace un año',
+    'llevo esperando','sigo esperando','aún no','aun no','todavía no','todavia no',
+    'sin novedad','sin solución','sin solucion',
+    'bloqueado','bloqueada','suspendido','suspendida','cancelado','cancelada',
+    'rechazado','rechazada','negado','negada','no han desembolsado','no llegó','no llego',
+    'cobro incorrecto','cobro errado','me cobraron mal','deuda incorrecta',
+    'beca no llegó','beca no llego','subsidio no llegó','subsidio no llego',
+    'no me renovaron','no me legalizaron','me negaron',
+    'nadie sabe','nadie me dice','no hay información','no hay informacion',
+    'información confusa','informacion confusa','muy confuso','muy confusa',
+    'portal caído','portal caido','sistema caído','sistema caido','error en el sistema',
+    'no puedo ingresar','no puedo acceder',
+  ];
+  const POS=[
+    'gracias','muchas gracias','mil gracias','agradecido','agradecida','agradezco','agradecemos',
+    'feliz','felices','contento','contenta','satisfecho','satisfecha',
+    'excelente','genial','perfecto','perfecta','bueno','buena','bien ','muy bien',
+    'maravilloso','maravillosa','increíble','increible','fantástico','fantastico',
+    'estupendo','estupenda','espectacular','sobresaliente','notable','impecable',
+    'encantado','encantada','felicitaciones','felicito','bravo','bien hecho',
+    'muy profesional','muy amable','muy cordial','muy atento','muy atenta',
+    'resolvieron','solucionaron','atendieron','respondieron rápido','respondieron rapido',
+    'me ayudaron','me orientaron','lo lograron','cumplieron',
+    'eficiente','eficientes','eficaz','buen servicio','excelente servicio',
+    'buen trabajo','excelente atención','excelente atencion','gran apoyo',
+    'rápido','rapido','ágil','agil','inmediato','sin demora','a tiempo',
+    'sin problemas','sin inconvenientes','todo bien',
+    'fácil','facil','sencillo','sencilla','claro','clara','bien explicado','muy claro',
+    'me aprobaron','me desembolsaron','recibí el dinero','recibi el dinero',
+    'llegó el desembolso','llego el desembolso','recibí el subsidio','recibi el subsidio',
+    'llegó la beca','llego la beca','me renovaron','me legalizaron','proceso exitoso',
+    'sin complicaciones','me apoyaron','me asesoraron bien',
+  ];
+  // Contar coincidencias por categoría (Crítico peso doble)
+  const cCrit = CRIT.filter(w=>t.includes(w)).length * 2;
+  const cNeg  = NEG.filter(w=>t.includes(w)).length;
+  const cPos  = POS.filter(w=>t.includes(w)).length;
+  const max = Math.max(cCrit,cNeg,cPos);
+  if(max===0) return 'Neutro';
+  if(cCrit===max) return 'Crítico';
+  if(cNeg===max)  return 'Negativo';
+  return 'Positivo';
 }
 function diffMin(a,b){return Math.abs((new Date(b)-new Date(a))/60000);}
 function fmtT(m){if(!m&&m!==0)return '';const h=Math.floor(m/60),mm=Math.round(m%60);return h?`${h}h ${mm}min`:`${mm}min`;}
