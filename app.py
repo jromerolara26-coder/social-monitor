@@ -235,7 +235,115 @@ def reprocesar_emociones(datos: dict) -> dict:
         for pub in pubs:
             for c in pub.get("comentarios", []):
                 c["emocion"] = detectar_emocion_srv(c.get("texto", ""))
+                c["tema"]    = detectar_tema_srv(c.get("texto", ""))
     return datos
+
+# ── Detección automática de temas ICETEX
+_TEMAS_ICETEX = {
+    "Crédito / Préstamo": [
+        "crédito","credito","préstamo","prestamo","financiación","financiacion",
+        "financiamiento","solicitar crédito","solicitud de crédito","aplicar crédito",
+        "modalidad","largo plazo","corto plazo","acces","icetex fácil","icetex facil",
+        "tasa de interés","intereses","amortización","amortizacion","cuota mensual",
+        "cuota del crédito","monto del crédito","valor del crédito",
+    ],
+    "Desembolso / Giro": [
+        "desembolso","desembolsar","desembolsaron","no desembolsan","sin desembolso",
+        "giro","giraron","no han girado","no me han girado","cuándo giran","cuando giran",
+        "cuándo desembolsan","cuando desembolsan","pendiente de giro","pendiente desembolso",
+        "transferencia","no llegó el dinero","no llego el dinero","no llegó la plata",
+        "no llego la plata","plata no llega","dinero no llega","no llegó","no llego",
+        "giro pendiente","giro no realizado","demora en el giro","demora desembolso",
+    ],
+    "Matrícula / Pago": [
+        "matrícula","matricula","pago de matrícula","pagar matrícula","pago matricula",
+        "factura","recibo de matrícula","liquidación","liquidacion","valor matrícula",
+        "pago semestre","semestre","cuota matrícula","cobro matrícula","recibo pago",
+        "aval de matrícula","aval matricula","fecha de pago","vencimiento pago",
+    ],
+    "Subsidio / Beca": [
+        "subsidio","subsidios","beca","becas","apoyo económico","apoyo economico",
+        "auxilio","beneficio económico","beneficio economico","gratuidad",
+        "generación e","generacion e","ser pilo paga","fondos especiales",
+        "fondo especial","beca de posgrado","beca exterior","beca internacional",
+        "beca de excelencia","beneficio educativo","apoyo académico",
+    ],
+    "Documentos / Requisitos": [
+        "documento","documentos","certificado","paz y salvo","constancia",
+        "soporte","carta","estado de cuenta","extracto","comprobante",
+        "documentación","documentacion","requisito","requisitos","cargar documentos",
+        "subir documentos","adjuntar","adjunto","formulario","formularios",
+        "documentos requeridos","documentos faltantes","falta documentos",
+        "solicitar certificado","solicitar constancia","papeles","papelería",
+    ],
+    "Portal / Plataforma": [
+        "portal","plataforma","página web","pagina web","sitio web","aplicativo",
+        "app icetex","sistema","sistema caído","sistema caido","caído","caido",
+        "error","error sistema","no carga","no funciona","falla","fallo","no abre",
+        "login","contraseña","clave","usuario","acceso","no puedo ingresar",
+        "no puedo entrar","no me deja entrar","problema con el portal",
+        "página no carga","el portal no sirve","plataforma caída",
+    ],
+    "Refinanciación / Mora": [
+        "refinanciación","refinanciacion","refinanciar","reestructurar","reestructuración",
+        "reestructuracion","mora","moroso","morosa","vencida","vencido","deuda vencida",
+        "cobro","cobros","jurídico","juridico","embargo","cobranza","cartera vencida",
+        "carta de cobro","acuerdo de pago","plan de pagos","cuota atrasada","atraso",
+        "atraso en pago","intereses de mora","sanción","sanciones",
+    ],
+    "Condonación": [
+        "condonación","condonacion","condonar","perdonar deuda","exonerar",
+        "exoneración","exoneracion","perdón de deuda","perdon de deuda",
+        "cancelar deuda","quitar deuda","eliminar deuda","saldo cero",
+        "quitar intereses","eliminar intereses","exonerar deuda","borrar deuda",
+    ],
+    "Atención al cliente": [
+        "atención","atencion","servicio al cliente","asesor","asesora","agente",
+        "call center","línea","linea","teléfono","telefono","chat","whatsapp",
+        "no responden","no atienden","mala atención","demora","tarda","espera",
+        "turno","nadie responde","me ignoraron","ignoraron","mala atención",
+        "pésimo servicio","pesimo servicio","mal servicio","no me ayudan",
+        "no dan solución","no dan solucion","sin respuesta","correo sin respuesta",
+    ],
+    "Posgrado / Exterior": [
+        "posgrado","maestría","maestria","doctorado","especialización","especializacion",
+        "postgrado","exterior","internacional","estudiar fuera","estudiar afuera",
+        "otro país","otro pais","extranjero","beca exterior","crédito exterior",
+        "estudio en el exterior","programa en el exterior",
+    ],
+    "Estado de solicitud": [
+        "estado","en estudio","en revisión","revision","en proceso","proceso de estudio",
+        "aprobado","aprobada","rechazado","rechazada","negado","negada","resultado",
+        "cuándo me responden","cuando responden","respuesta solicitud","seguimiento",
+        "radicado","radicacion","número de radicado","número de caso","consultar estado",
+        "cómo saber","como saber","cómo va","como va mi solicitud","saber si fue aprobado",
+    ],
+    "Renovación / Legalización": [
+        "renovación","renovacion","renovar","legalización","legalizacion","legalizar",
+        "renovar crédito","actualizar datos","actualización","actualizacion",
+        "próximo semestre","proximo semestre","continuar beneficio","continuar crédito",
+        "renovar beca","renovar subsidio","renovar apoyo","mantener beneficio",
+    ],
+    "Cobro / Facturación": [
+        "me están cobrando","me cobran","cobro incorrecto","cobro erróneo","cobro erroneo",
+        "me cobran de más","me cobran de mas","error en cobro","cobro duplicado",
+        "doble cobro","cobro sin aviso","cobro inesperado","factura incorrecta",
+        "saldo incorrecto","saldo equivocado","no debo eso","no reconozco el cobro",
+    ],
+}
+
+def detectar_tema_srv(texto: str) -> str:
+    if not texto:
+        return "Otros"
+    t = texto.lower()
+    scores = {}
+    for tema, palabras in _TEMAS_ICETEX.items():
+        score = sum(1 for p in palabras if p in t)
+        if score > 0:
+            scores[tema] = score
+    if not scores:
+        return "Otros"
+    return max(scores, key=scores.get)
 
 # ── Helpers originales
 def get_ip():
@@ -699,8 +807,9 @@ def api_dashboard():
                         "riesgo":                riesgo,
                     })
                     for c in coms:
-                        tema_c = c.get("tema", "otro")
-                        em     = c.get("emocion", "Neutro")
+                        texto_c = c.get("texto", "")
+                        tema_c  = detectar_tema_srv(texto_c) if texto_c.strip() else (c.get("tema") or "Otros")
+                        em      = c.get("emocion", "Neutro")
                         temas[tema_c] = temas.get(tema_c, 0) + 1
                         sent[em]      = sent.get(em, 0) + 1
                         # Mensajes por sentimiento (max 15 por categoría)

@@ -118,17 +118,52 @@ let data = Object.fromEntries(Object.keys(PLATS).map(p=>[p,[]]));
 function getSLA(p){ return +(document.getElementById('sla_'+p)||{}).value || 8; }
 
 const TEMAS = {
-  'crédito / pago':['crédito','credito','cuota','pago','deuda','mora','cobro'],
-  'beca / condonación':['beca','condonación','condonacion','subsidio'],
-  'trámites / portal':['portal','trámite','tramite','solicitud','sistema'],
-  'atención al cliente':['atención','atencion','servicio','demora','espera'],
-  'reclamo / queja':['reclamo','queja','problema','error','terrible'],
-  'posgrado / internacional':['posgrado','maestría','maestria','exterior','internacional'],
+  'Crédito / Préstamo':['crédito','credito','préstamo','prestamo','financiación','financiacion',
+    'financiamiento','acces','icetex fácil','icetex facil','tasa de interés','intereses',
+    'amortización','amortizacion','cuota mensual','cuota del crédito','monto del crédito'],
+  'Desembolso / Giro':['desembolso','desembolsar','desembolsaron','no desembolsan','giro',
+    'giraron','no han girado','no me han girado','cuándo giran','cuando giran','transferencia',
+    'no llegó el dinero','no llego el dinero','no llegó la plata','dinero no llega'],
+  'Matrícula / Pago':['matrícula','matricula','pago de matrícula','pagar matrícula','factura',
+    'recibo','liquidación','liquidacion','valor matrícula','pago semestre','semestre',
+    'cuota matrícula','cobro matrícula','aval de matrícula'],
+  'Subsidio / Beca':['subsidio','subsidios','beca','becas','apoyo económico','apoyo economico',
+    'auxilio','beneficio económico','gratuidad','generación e','generacion e',
+    'fondos especiales','fondo especial','beneficio educativo','apoyo académico'],
+  'Documentos / Requisitos':['documento','documentos','certificado','paz y salvo','constancia',
+    'soporte','carta','estado de cuenta','extracto','comprobante','documentación','requisito',
+    'requisitos','cargar documentos','subir documentos','papeles'],
+  'Portal / Plataforma':['portal','plataforma','página web','pagina web','sitio web',
+    'aplicativo','sistema','caído','caido','error','no carga','no funciona','falla',
+    'login','contraseña','clave','no puedo ingresar','no puedo entrar'],
+  'Refinanciación / Mora':['refinanciación','refinanciacion','refinanciar','mora','moroso',
+    'morosa','vencida','vencido','cobro','jurídico','juridico','embargo','cartera vencida',
+    'acuerdo de pago','plan de pagos','cuota atrasada','atraso','intereses de mora'],
+  'Condonación':['condonación','condonacion','condonar','perdonar deuda','exonerar',
+    'exoneración','perdón de deuda','cancelar deuda','quitar deuda','saldo cero'],
+  'Atención al cliente':['atención','atencion','servicio al cliente','asesor','call center',
+    'línea','linea','teléfono','telefono','no responden','no atienden','mala atención',
+    'demora','espera','nadie responde','pésimo servicio','pesimo servicio'],
+  'Posgrado / Exterior':['posgrado','maestría','maestria','doctorado','especialización',
+    'especializacion','exterior','internacional','estudiar fuera','extranjero'],
+  'Estado de solicitud':['en estudio','en revisión','revision','aprobado','aprobada',
+    'rechazado','rechazada','negado','negada','radicado','número de radicado',
+    'consultar estado','cómo va','como va mi solicitud','fue aprobado'],
+  'Renovación / Legalización':['renovación','renovacion','renovar','legalización',
+    'legalizacion','legalizar','actualizar datos','próximo semestre','continuar crédito'],
+  'Cobro / Facturación':['me cobran de más','cobro incorrecto','cobro erróneo','cobro erroneo',
+    'error en cobro','cobro duplicado','doble cobro','factura incorrecta','saldo incorrecto',
+    'no reconozco el cobro'],
 };
 function tema(txt){
-  const t=txt.toLowerCase();
-  for(const[k,v] of Object.entries(TEMAS)) if(v.some(w=>t.includes(w))) return k;
-  return 'otro';
+  const t=(txt||'').toLowerCase();
+  const scores={};
+  for(const[k,v] of Object.entries(TEMAS)){
+    const s=v.filter(w=>t.includes(w)).length;
+    if(s>0) scores[k]=s;
+  }
+  if(!Object.keys(scores).length) return 'Otros';
+  return Object.entries(scores).sort((a,b)=>b[1]-a[1])[0][0];
 }
 function calidad(resp){
   if(!resp) return {score:0,nivel:'Sin respuesta',motivo:'No hubo respuesta'};

@@ -324,8 +324,14 @@ function renderEditor(datos){
                 <select onchange="setCom('${plat}',${pi},${ci},'emocion',this.value);updEm(this,'${plat}',${pi},${ci})">${emOpts}</select>
               </div>
               <div>
-                <label>Tema</label>
-                <input type="text" value="${esc(c.tema||'')}" onchange="setCom('${plat}',${pi},${ci},'tema',this.value)">
+                <label>Tema detectado</label>
+                <select onchange="setCom('${plat}',${pi},${ci},'tema',this.value)" style="width:100%;border:1px solid #d0d9e8;border-radius:6px;padding:6px 8px;font-size:13px">
+                  ${['Crédito / Préstamo','Desembolso / Giro','Matrícula / Pago','Subsidio / Beca',
+                     'Documentos / Requisitos','Portal / Plataforma','Refinanciación / Mora',
+                     'Condonación','Atención al cliente','Posgrado / Exterior',
+                     'Estado de solicitud','Renovación / Legalización','Cobro / Facturación','Otros']
+                    .map(t=>`<option value="${t}" ${(c.tema||'Otros')===t?'selected':''}>${t}</option>`).join('')}
+                </select>
               </div>
               <div class="resp-block">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
