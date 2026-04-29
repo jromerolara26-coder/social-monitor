@@ -491,14 +491,14 @@ def api_dashboard():
                     plats[plat]["tiempos"].extend(tiempos)
                     likes     = pub.get("likes", 0) or 0
                     shares    = pub.get("shares", 0) or 0
-                    # Viral Score = comentarios×3 + compartidos×2 + likes×1
-                    viral_score = (n_coms * 3) + (shares * 2) + (likes * 1)
                     tasa = round(n_resp / n_coms * 100, 1) if n_coms > 0 else 0
-                    # Riesgo bajo rendimiento: penaliza baja respuesta y bajo volumen
+                    viral_score = (n_coms * 3) + (shares * 2) + (likes * 1)
                     riesgo = round((100 - tasa) * 0.7 + max(0, 10 - n_coms) * 3, 1)
                     pubs_list.append({
                         "plataforma":  plat,
                         "texto":       pub.get("texto", ""),
+                        "url":         pub.get("url", ""),
+                        "fecha":       pub.get("fecha", "")[:10] if pub.get("fecha") else "",
                         "n_coms":      n_coms,
                         "n_resp":      n_resp,
                         "likes":       likes,
@@ -545,7 +545,11 @@ def api_dashboard():
         }
 
     virales = sorted(pubs_c, key=lambda x: x["viral_score"], reverse=True)[:5]
-    bajas   = sorted(pubs_c, key=lambda x: x["riesgo"], reverse=True)[:5]
+    textos_virales = {p["texto"] for p in virales}
+    bajas   = sorted(
+        [p for p in pubs_c if p["texto"] not in textos_virales],
+        key=lambda x: x["riesgo"], reverse=True
+    )[:5]
     temas_s = dict(sorted(temas_c.items(), key=lambda x: x[1], reverse=True))
     conclusiones = generar_conclusiones(plataformas, sent_c, temas_s)
 
