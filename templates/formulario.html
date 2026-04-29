@@ -233,7 +233,8 @@ function cambiarPlat(p){
 
 function addPub(){
   cnt[plat]++;
-  data[plat].push({_id:`${plat}_${cnt[plat]}`,texto:'',fecha:'',likes:0,shares:0,url:'',comentarios:[]});
+  data[plat].push({_id:`${plat}_${cnt[plat]}`,texto:'',fecha:'',likes:0,shares:0,url:'',
+    alcance:0,impresiones:0,ctr:0,nuevos_seguidores:0,tiempo_visionado_seg:0,comentarios:[]});
   renderPubs();
 }
 function delPub(id){data[plat]=data[plat].filter(p=>p._id!==id);renderPubs();}
@@ -258,6 +259,27 @@ function renderPubs(){
       </div>
       <div class="f"><label>URL del post (opcional)</label>
         <input type="url" value="${p.url}" placeholder="https://..." onchange="sf('${p._id}','url',this.value)"></div>
+      <details style="margin-top:10px;border:1px solid #d0e4f7;border-radius:8px;overflow:hidden">
+        <summary style="background:#f0f6ff;padding:8px 14px;font-size:.78rem;font-weight:700;color:#1565c0;cursor:pointer;list-style:none">
+          📈 Métricas de rendimiento (alcance, impresiones, CTR...)
+        </summary>
+        <div style="padding:12px 14px">
+          <div class="g3">
+            <div class="f"><label>Alcance (personas)</label>
+              <input type="number" min="0" value="${p.alcance||0}" onchange="sf('${p._id}','alcance',+this.value)"></div>
+            <div class="f"><label>Impresiones</label>
+              <input type="number" min="0" value="${p.impresiones||0}" onchange="sf('${p._id}','impresiones',+this.value)"></div>
+            <div class="f"><label>CTR % (clic/impresión)</label>
+              <input type="number" min="0" max="100" step="0.01" value="${p.ctr||0}" onchange="sf('${p._id}','ctr',+this.value)"></div>
+            <div class="f"><label>Nuevos seguidores</label>
+              <input type="number" min="0" value="${p.nuevos_seguidores||0}" onchange="sf('${p._id}','nuevos_seguidores',+this.value)"></div>
+            <div class="f"><label>T. visionado promedio (seg)</label>
+              <input type="number" min="0" value="${p.tiempo_visionado_seg||0}" onchange="sf('${p._id}','tiempo_visionado_seg',+this.value)"></div>
+            <div class="f"><label>Guardados / Saves</label>
+              <input type="number" min="0" value="${p.guardados||0}" onchange="sf('${p._id}','guardados',+this.value)"></div>
+          </div>
+        </div>
+      </details>
       <div id="coms_${p._id}">${renderComs(p)}</div>
       <button class="btn btn-o btn-sm" style="margin-top:7px" onclick="addCom('${p._id}')">＋ Agregar comentario</button>
     </div>`).join('');
@@ -361,7 +383,11 @@ function buildPayload(){
         id:`${p.substring(0,2).toUpperCase()}_${String(pi+1).padStart(3,'0')}_${Date.now()}`,
         texto:pub.texto||'(Sin texto)',
         fecha:pub.fecha?new Date(pub.fecha).toISOString():new Date().toISOString(),
-        likes:pub.likes||0,shares:pub.shares||0,
+        likes:pub.likes||0, shares:pub.shares||0,
+        alcance:pub.alcance||0, impresiones:pub.impresiones||0,
+        ctr:pub.ctr||0, nuevos_seguidores:pub.nuevos_seguidores||0,
+        tiempo_visionado_seg:pub.tiempo_visionado_seg||0,
+        guardados:pub.guardados||0,
         replies_total:coms.length,
         comentarios:coms,
         url:pub.url||`https://www.${p}.com/`

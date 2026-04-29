@@ -647,28 +647,50 @@ def api_dashboard():
                                if c.get("tiempo_respuesta_min") is not None]
                     if plat not in plats:
                         plats[plat] = {"total_comentarios": 0, "respondidos": 0,
-                                       "publicaciones": 0, "tiempos": []}
+                                       "publicaciones": 0, "tiempos": [],
+                                       "alcance": 0, "impresiones": 0,
+                                       "nuevos_seg": 0, "ctrs": [], "t_vision": []}
                     plats[plat]["total_comentarios"] += n_coms
                     plats[plat]["respondidos"]       += n_resp
                     plats[plat]["publicaciones"]     += 1
                     plats[plat]["tiempos"].extend(tiempos)
-                    likes     = pub.get("likes", 0) or 0
-                    shares    = pub.get("shares", 0) or 0
+                    likes       = pub.get("likes", 0) or 0
+                    shares      = pub.get("shares", 0) or 0
+                    alcance     = pub.get("alcance", 0) or 0
+                    impresiones = pub.get("impresiones", 0) or 0
+                    ctr         = pub.get("ctr", 0) or 0
+                    nuevos_seg  = pub.get("nuevos_seguidores", 0) or 0
+                    t_vision    = pub.get("tiempo_visionado_seg", 0) or 0
+                    guardados   = pub.get("guardados", 0) or 0
                     tasa = round(n_resp / n_coms * 100, 1) if n_coms > 0 else 0
-                    viral_score = (n_coms * 3) + (shares * 2) + (likes * 1)
+                    interacciones = likes + shares + n_coms + guardados
+                    tasa_interaccion = round(interacciones / alcance * 100, 2) if alcance > 0 else 0
+                    viral_score = (n_coms * 3) + (shares * 2) + (likes * 1) + (guardados * 2)
                     riesgo = round((100 - tasa) * 0.7 + max(0, 10 - n_coms) * 3, 1)
+                    plats[plat]["alcance"]     = plats[plat].get("alcance", 0) + alcance
+                    plats[plat]["impresiones"] = plats[plat].get("impresiones", 0) + impresiones
+                    plats[plat]["nuevos_seg"]  = plats[plat].get("nuevos_seg", 0) + nuevos_seg
+                    plats[plat]["ctrs"].append(ctr) if ctr > 0 else None
+                    plats[plat]["t_vision"].append(t_vision) if t_vision > 0 else None
                     pubs_list.append({
-                        "plataforma":  plat,
-                        "texto":       pub.get("texto", ""),
-                        "url":         pub.get("url", ""),
-                        "fecha":       pub.get("fecha", "")[:10] if pub.get("fecha") else "",
-                        "n_coms":      n_coms,
-                        "n_resp":      n_resp,
-                        "likes":       likes,
-                        "shares":      shares,
-                        "tasa":        tasa,
-                        "viral_score": viral_score,
-                        "riesgo":      riesgo,
+                        "plataforma":       plat,
+                        "texto":            pub.get("texto", ""),
+                        "url":              pub.get("url", ""),
+                        "fecha":            pub.get("fecha", "")[:10] if pub.get("fecha") else "",
+                        "n_coms":           n_coms,
+                        "n_resp":           n_resp,
+                        "likes":            likes,
+                        "shares":           shares,
+                        "guardados":        guardados,
+                        "alcance":          alcance,
+                        "impresiones":      impresiones,
+                        "ctr":              ctr,
+                        "nuevos_seguidores":nuevos_seg,
+                        "tiempo_visionado_seg": t_vision,
+                        "tasa":             tasa,
+                        "tasa_interaccion": tasa_interaccion,
+                        "viral_score":      viral_score,
+                        "riesgo":           riesgo,
                     })
                     for c in coms:
                         t = c.get("tema", "otro")
@@ -707,23 +729,117 @@ def api_dashboard():
             "evolucion_pct":       evol,
         }
 
-    virales = sorted(pubs_c, key=lambda x: x["viral_score"], reverse=True)[:5]
+    # ── Clasificación ±30% respecto al promedio histórico
+    if pubs_c:
+        avg_score = sum(p["viral_score"] for p in pubs_c) / len(pubs_c)
+        umbral_alto = avg_score * 1.30
+        umbral_bajo = avg_score * 0.70
+        for p in pubs_c:
+            if p["viral_score"] >= umbral_alto:
+                p["clasificacion"] = "viral"
+            elif p["viral_score"] <= umbral_bajo:
+                p["clasificacion"] = "bajo"
+            else:
+                p["clasificacion"] = "promedio"
+        avg_score_r = round(avg_score, 1)
+    else:
+        avg_score_r = 0
+
+    virales = sorted([p for p in pubs_c if p.get("clasificacion")=="viral"],
+                     key=lambda x: x["viral_score"], reverse=True)[:5]
+    if not virales:
+        virales = sorted(pubs_c, key=lambda x: x["viral_score"], reverse=True)[:3]
+
     textos_virales = {p["texto"] for p in virales}
-    bajas   = sorted(
-        [p for p in pubs_c if p["texto"] not in textos_virales],
+    bajas = sorted(
+        [p for p in pubs_c if p["texto"] not in textos_virales and p.get("clasificacion") in ("bajo", "promedio")],
         key=lambda x: x["riesgo"], reverse=True
     )[:5]
+
+    # ── Métricas globales avanzadas
+    total_alcance     = sum(p.get("alcance", 0) for p in pubs_c)
+    total_impresiones = sum(p.get("impresiones", 0) for p in pubs_c)
+    total_nuevos_seg  = sum(p.get("nuevos_seguidores", 0) for p in pubs_c)
+    ctrs_validos      = [p["ctr"] for p in pubs_c if p.get("ctr", 0) > 0]
+    t_vision_validos  = [p["tiempo_visionado_seg"] for p in pubs_c if p.get("tiempo_visionado_seg", 0) > 0]
+    total_interacciones = sum(p.get("likes",0)+p.get("shares",0)+p.get("n_coms",0)+p.get("guardados",0) for p in pubs_c)
+    avg_ctr           = round(sum(ctrs_validos)/len(ctrs_validos), 2) if ctrs_validos else 0
+    avg_t_vision      = round(sum(t_vision_validos)/len(t_vision_validos), 0) if t_vision_validos else 0
+    tasa_interaccion_global = round(total_interacciones / total_alcance * 100, 2) if total_alcance > 0 else 0
+
+    n_virales  = sum(1 for p in pubs_c if p.get("clasificacion")=="viral")
+    n_promedio = sum(1 for p in pubs_c if p.get("clasificacion")=="promedio")
+    n_bajos    = sum(1 for p in pubs_c if p.get("clasificacion")=="bajo")
+
+    # ── Recomendaciones automáticas
+    recomendaciones = []
+    total_pubs = len(pubs_c)
+    if total_pubs > 0:
+        pct_bajos = n_bajos / total_pubs * 100
+        pct_virales = n_virales / total_pubs * 100
+        total_resp_global = sum(p.get("n_resp",0) for p in pubs_c)
+        total_coms_global = sum(p.get("n_coms",0) for p in pubs_c)
+        tasa_resp_global  = round(total_resp_global / total_coms_global * 100, 1) if total_coms_global > 0 else 0
+
+        if pct_bajos > 40:
+            recomendaciones.append({"tipo":"alerta","icono":"📉","titulo":"Alto % de publicaciones con bajo rendimiento",
+                "texto":f"{n_bajos} de {total_pubs} posts ({pct_bajos:.0f}%) están por debajo del 70% del promedio. Revisar horarios de publicación, formato del contenido y temáticas menos efectivas."})
+        if pct_virales > 30:
+            mejores = sorted(pubs_c, key=lambda x: x["viral_score"], reverse=True)[:2]
+            temas_virales = ", ".join(set(p.get("texto","")[:40] for p in mejores))
+            recomendaciones.append({"tipo":"exito","icono":"🔥","titulo":"Contenido viral identificado",
+                "texto":f"{n_virales} posts superan el 130% del promedio. Replicar el formato y temática de estos contenidos: \"{temas_virales}...\""})
+        if tasa_resp_global < 60:
+            recomendaciones.append({"tipo":"alerta","icono":"💬","titulo":"Tasa de respuesta insuficiente",
+                "texto":f"Solo el {tasa_resp_global}% de los comentarios tienen respuesta. Se recomienda establecer turnos de atención y metas de respuesta del 80% en menos de 4 horas."})
+        if avg_ctr > 0 and avg_ctr < 1:
+            recomendaciones.append({"tipo":"alerta","icono":"🔗","titulo":"CTR bajo — mejorar call-to-action",
+                "texto":f"El CTR promedio es {avg_ctr}%. Incluir llamados a la acción claros (\"Más información aquí\", \"Solicita tu crédito\"), usar botones de enlace y optimizar los primeros 3 segundos del contenido."})
+        if avg_ctr >= 3:
+            recomendaciones.append({"tipo":"exito","icono":"🎯","titulo":"Excelente CTR",
+                "texto":f"CTR promedio de {avg_ctr}%, por encima del benchmark sectorial (1-2%). Continuar con este estilo de copys y formatos."})
+        if avg_t_vision > 0 and avg_t_vision < 15:
+            recomendaciones.append({"tipo":"alerta","icono":"⏱️","titulo":"Tiempo de visionado bajo en videos",
+                "texto":f"Promedio de visionado: {avg_t_vision}s. Capturar la atención en los primeros 3 segundos, usar subtítulos y mantener videos cortos (30-60s) con mensaje directo."})
+        if avg_t_vision >= 30:
+            recomendaciones.append({"tipo":"exito","icono":"▶️","titulo":"Buen engagement en videos",
+                "texto":f"Tiempo de visionado promedio: {avg_t_vision}s. El formato de video está funcionando bien. Aumentar la frecuencia de publicación de videos."})
+        if total_nuevos_seg > 0:
+            recomendaciones.append({"tipo":"info","icono":"👥","titulo":"Nuevos seguidores captados",
+                "texto":f"{total_nuevos_seg} nuevos seguidores en el período. Para aumentar este número: publicar contenido educativo sobre ICETEX, hacer preguntas directas a la audiencia y usar hashtags relevantes."})
+        if not recomendaciones:
+            recomendaciones.append({"tipo":"info","icono":"📊","titulo":"Ingresa métricas completas",
+                "texto":"Para generar recomendaciones detalladas, completa los campos de alcance, impresiones, CTR y tiempo de visionado en el formulario de ingreso de datos."})
+
+    metricas_avanzadas = {
+        "total_alcance":      total_alcance,
+        "total_impresiones":  total_impresiones,
+        "total_nuevos_seg":   total_nuevos_seg,
+        "avg_ctr":            avg_ctr,
+        "avg_t_vision_seg":   avg_t_vision,
+        "tasa_interaccion":   tasa_interaccion_global,
+        "total_interacciones":total_interacciones,
+        "n_virales":          n_virales,
+        "n_promedio":         n_promedio,
+        "n_bajos":            n_bajos,
+        "avg_score":          avg_score_r,
+        "total_pubs":         total_pubs,
+    }
+
     temas_s = dict(sorted(temas_c.items(), key=lambda x: x[1], reverse=True))
     conclusiones = generar_conclusiones(plataformas, sent_c, temas_s)
 
     return jsonify({
         "mes": mes, "anio": anio,
-        "plataformas": plataformas,
-        "virales":     virales,
-        "bajas":       bajas,
-        "temas":       temas_s,
-        "sentimiento": sent_c,
-        "conclusiones": conclusiones,
+        "plataformas":       plataformas,
+        "virales":           virales,
+        "bajas":             bajas,
+        "todos_pubs":        sorted(pubs_c, key=lambda x: x["viral_score"], reverse=True),
+        "temas":             temas_s,
+        "sentimiento":       sent_c,
+        "conclusiones":      conclusiones,
+        "metricas_avanzadas":metricas_avanzadas,
+        "recomendaciones":   recomendaciones,
     })
 
 init_db()
