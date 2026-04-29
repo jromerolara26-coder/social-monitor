@@ -632,7 +632,9 @@ def api_dashboard():
     def extraer(filas):
         plats, pubs_list = {}, []
         temas = {}
+        temas_detalle = {}
         sent  = {"Positivo": 0, "Negativo": 0, "Neutro": 0, "Crítico": 0}
+        sent_msgs = {"Positivo": [], "Negativo": [], "Neutro": [], "Crítico": []}
         for row in filas:
             try:
                 d = json.loads(row["datos"])
@@ -640,16 +642,17 @@ def api_dashboard():
                 continue
             for plat, pub_list in d.items():
                 for pub in pub_list:
-                    coms   = pub.get("comentarios", [])
-                    n_coms = len(coms)
-                    n_resp = sum(1 for c in coms if c.get("respondido"))
+                    coms    = pub.get("comentarios", [])
+                    n_coms  = len(coms)
+                    n_resp  = sum(1 for c in coms if c.get("respondido"))
                     tiempos = [c["tiempo_respuesta_min"] for c in coms
                                if c.get("tiempo_respuesta_min") is not None]
                     if plat not in plats:
                         plats[plat] = {"total_comentarios": 0, "respondidos": 0,
                                        "publicaciones": 0, "tiempos": [],
                                        "alcance": 0, "impresiones": 0,
-                                       "nuevos_seg": 0, "ctrs": [], "t_vision": []}
+                                       "nuevos_seg": 0, "ctrs": [], "t_vision": [],
+                                       "likes": 0, "shares": 0, "guardados": 0}
                     plats[plat]["total_comentarios"] += n_coms
                     plats[plat]["respondidos"]       += n_resp
                     plats[plat]["publicaciones"]     += 1
@@ -663,41 +666,69 @@ def api_dashboard():
                     t_vision    = pub.get("tiempo_visionado_seg", 0) or 0
                     guardados   = pub.get("guardados", 0) or 0
                     tasa = round(n_resp / n_coms * 100, 1) if n_coms > 0 else 0
-                    interacciones = likes + shares + n_coms + guardados
+                    interacciones    = likes + shares + n_coms + guardados
                     tasa_interaccion = round(interacciones / alcance * 100, 2) if alcance > 0 else 0
                     viral_score = (n_coms * 3) + (shares * 2) + (likes * 1) + (guardados * 2)
-                    riesgo = round((100 - tasa) * 0.7 + max(0, 10 - n_coms) * 3, 1)
+                    riesgo      = round((100 - tasa) * 0.7 + max(0, 10 - n_coms) * 3, 1)
                     plats[plat]["alcance"]     = plats[plat].get("alcance", 0) + alcance
                     plats[plat]["impresiones"] = plats[plat].get("impresiones", 0) + impresiones
                     plats[plat]["nuevos_seg"]  = plats[plat].get("nuevos_seg", 0) + nuevos_seg
-                    plats[plat]["ctrs"].append(ctr) if ctr > 0 else None
-                    plats[plat]["t_vision"].append(t_vision) if t_vision > 0 else None
+                    plats[plat]["likes"]       = plats[plat].get("likes", 0) + likes
+                    plats[plat]["shares"]      = plats[plat].get("shares", 0) + shares
+                    plats[plat]["guardados"]   = plats[plat].get("guardados", 0) + guardados
+                    if ctr > 0:   plats[plat]["ctrs"].append(ctr)
+                    if t_vision > 0: plats[plat]["t_vision"].append(t_vision)
                     pubs_list.append({
-                        "plataforma":       plat,
-                        "texto":            pub.get("texto", ""),
-                        "url":              pub.get("url", ""),
-                        "fecha":            pub.get("fecha", "")[:10] if pub.get("fecha") else "",
-                        "n_coms":           n_coms,
-                        "n_resp":           n_resp,
-                        "likes":            likes,
-                        "shares":           shares,
-                        "guardados":        guardados,
-                        "alcance":          alcance,
-                        "impresiones":      impresiones,
-                        "ctr":              ctr,
-                        "nuevos_seguidores":nuevos_seg,
-                        "tiempo_visionado_seg": t_vision,
-                        "tasa":             tasa,
-                        "tasa_interaccion": tasa_interaccion,
-                        "viral_score":      viral_score,
-                        "riesgo":           riesgo,
+                        "plataforma":            plat,
+                        "texto":                 pub.get("texto", ""),
+                        "url":                   pub.get("url", ""),
+                        "fecha":                 pub.get("fecha", "")[:10] if pub.get("fecha") else "",
+                        "n_coms":                n_coms,
+                        "n_resp":                n_resp,
+                        "likes":                 likes,
+                        "shares":                shares,
+                        "guardados":             guardados,
+                        "alcance":               alcance,
+                        "impresiones":           impresiones,
+                        "ctr":                   ctr,
+                        "nuevos_seguidores":     nuevos_seg,
+                        "tiempo_visionado_seg":  t_vision,
+                        "tasa":                  tasa,
+                        "tasa_interaccion":      tasa_interaccion,
+                        "viral_score":           viral_score,
+                        "riesgo":                riesgo,
                     })
                     for c in coms:
-                        t = c.get("tema", "otro")
-                        temas[t] = temas.get(t, 0) + 1
-                        em = c.get("emocion", "Neutro")
-                        sent[em] = sent.get(em, 0) + 1
-        return plats, pubs_list, temas, sent
+                        tema_c = c.get("tema", "otro")
+                        em     = c.get("emocion", "Neutro")
+                        temas[tema_c] = temas.get(tema_c, 0) + 1
+                        sent[em]      = sent.get(em, 0) + 1
+                        # Mensajes por sentimiento (max 15 por categoría)
+                        if len(sent_msgs.get(em, [])) < 15:
+                            sent_msgs.setdefault(em, []).append({
+                                "usuario":    c.get("usuario", "Usuario"),
+                                "texto":      c.get("texto", ""),
+                                "plataforma": plat,
+                                "fecha":      c.get("fecha", "")[:10] if c.get("fecha") else "",
+                                "respondido": c.get("respondido", False),
+                                "texto_resp": c.get("texto_respuesta", "") or "",
+                            })
+                        # Detalle por tema
+                        if tema_c not in temas_detalle:
+                            temas_detalle[tema_c] = {
+                                "count": 0,
+                                "sent": {"Positivo":0,"Negativo":0,"Crítico":0,"Neutro":0},
+                                "ejemplos": [],
+                                "respondidos": 0,
+                            }
+                        temas_detalle[tema_c]["count"] += 1
+                        temas_detalle[tema_c]["sent"][em] = temas_detalle[tema_c]["sent"].get(em, 0) + 1
+                        if c.get("respondido"): temas_detalle[tema_c]["respondidos"] += 1
+                        if len(temas_detalle[tema_c]["ejemplos"]) < 3:
+                            temas_detalle[tema_c]["ejemplos"].append({
+                                "texto": c.get("texto", ""), "emocion": em, "plataforma": plat
+                            })
+        return plats, pubs_list, temas, sent, sent_msgs, temas_detalle
 
     curr, prev = [], []
     for row in rows:
@@ -709,24 +740,39 @@ def api_dashboard():
         elif m is None:
             curr.append(row)
 
-    plats_c, pubs_c, temas_c, sent_c = extraer(curr)
-    plats_p, _, _, _                  = extraer(prev)
+    plats_c, pubs_c, temas_c, sent_c, sent_msgs_c, temas_det_c = extraer(curr)
+    plats_p, _, _, _, _, _                                     = extraer(prev)
 
     plataformas = {}
     for plat, st in plats_c.items():
-        total = st["total_comentarios"]
-        resp  = st["respondidos"]
-        tms   = st["tiempos"]
+        total      = st["total_comentarios"]
+        resp       = st["respondidos"]
+        tms        = st["tiempos"]
+        ctrs_p     = st.get("ctrs", [])
+        tv_p       = st.get("t_vision", [])
         prev_total = plats_p.get(plat, {}).get("total_comentarios", 0)
-        evol  = round((total - prev_total) / prev_total * 100, 1) if prev_total > 0 else 0
+        evol       = round((total - prev_total) / prev_total * 100, 1) if prev_total > 0 else 0
+        tasa_r     = round(resp / total * 100, 1) if total > 0 else 0
+        alcance_p  = st.get("alcance", 0)
+        inter_p    = st.get("likes",0)+st.get("shares",0)+total+st.get("guardados",0)
         plataformas[plat] = {
             "total_comentarios":   total,
             "respondidos":         resp,
+            "no_respondidos":      total - resp,
             "publicaciones":       st["publicaciones"],
-            "tasa_respuesta":      round(resp / total * 100, 1) if total > 0 else 0,
+            "tasa_respuesta":      tasa_r,
             "tiempo_promedio_min": round(sum(tms) / len(tms), 0) if tms else None,
             "comentarios_mes_ant": prev_total,
             "evolucion_pct":       evol,
+            "alcance":             alcance_p,
+            "impresiones":         st.get("impresiones", 0),
+            "likes":               st.get("likes", 0),
+            "shares":              st.get("shares", 0),
+            "guardados":           st.get("guardados", 0),
+            "nuevos_seguidores":   st.get("nuevos_seg", 0),
+            "avg_ctr":             round(sum(ctrs_p)/len(ctrs_p),2) if ctrs_p else 0,
+            "avg_t_vision":        round(sum(tv_p)/len(tv_p),0) if tv_p else 0,
+            "tasa_interaccion":    round(inter_p / alcance_p * 100, 2) if alcance_p > 0 else 0,
         }
 
     # ── Clasificación ±30% respecto al promedio histórico
@@ -836,11 +882,87 @@ def api_dashboard():
         "bajas":             bajas,
         "todos_pubs":        sorted(pubs_c, key=lambda x: x["viral_score"], reverse=True),
         "temas":             temas_s,
+        "temas_detalle":     temas_det_c,
         "sentimiento":       sent_c,
+        "sent_msgs":         sent_msgs_c,
         "conclusiones":      conclusiones,
         "metricas_avanzadas":metricas_avanzadas,
         "recomendaciones":   recomendaciones,
     })
+
+_FRASES_GENERICAS_V = [
+    "gracias por contactarnos","gracias por escribirnos","gracias por comunicarte",
+    "te invitamos a ingresar","visita nuestra página","ingresa a",
+    "por favor escríbenos","escríbenos al correo","comunícate al","llámanos al",
+    "lamentamos el inconveniente","entendemos tu situación",
+    "con gusto te ayudamos","estamos para servirte","quedamos atentos",
+    "bienvenido","hola! gracias","hola, gracias","con mucho gusto",
+    "en breve","a la mayor brevedad","nos pondremos en contacto",
+    "mediante mensaje directo","por mensaje privado","por mp","al número",
+]
+_INDICADORES_RESOLUCION_V = [
+    "hemos revisado","hemos verificado","revisamos tu caso","verificamos tu caso",
+    "tu caso fue","procedimos a","ya fue procesado","ya fue actualizado","ya fue corregido",
+    "el desembolso","el subsidio","la beca","el crédito","tu solicitud","tu radicado",
+    "número de radicado","el proceso de","los requisitos son","los pasos son",
+    "debes","debes ingresar","debes adjuntar","el plazo es","la fecha límite",
+    "tienes hasta","te informamos que","te comunicamos que","te confirmamos que",
+    "fue aprobado","fue aprobada","está en proceso","en revisión","en trámite",
+]
+_STOPWORDS_V = {"el","la","los","las","un","una","y","o","de","en","que","a","por","con",
+                "su","al","del","es","se","me","te","nos","hay","para","pero","como",
+                "más","mas","muy","ya","si","no","mi","tu","le","lo"}
+
+def evaluar_calidad_api(comentario: str, respuesta: str) -> dict:
+    if not respuesta or not respuesta.strip():
+        return {"score":0,"nivel":"Sin respuesta","motivo":"ICETEX no respondió","relevancia_pct":0,
+                "sugerencia":"Responder el comentario del usuario lo antes posible."}
+    c = comentario.lower()
+    r = respuesta.lower()
+    longitud      = len(respuesta.strip())
+    n_genericas   = sum(1 for f in _FRASES_GENERICAS_V if f in r)
+    n_resolucion  = sum(1 for f in _INDICADORES_RESOLUCION_V if f in r)
+    palabras_com  = {w for w in c.split() if len(w) > 3 and w not in _STOPWORDS_V}
+    n_palabras_en_resp = sum(1 for p in palabras_com if p in r)
+    relevancia_pct = round(n_palabras_en_resp / len(palabras_com) * 100, 1) if palabras_com else 0
+    redirige = any(f in r for f in ["escríbenos al","escribenos al","por mensaje privado",
+                                     "mediante mensaje directo","al correo","al número","por mp"])
+    if n_genericas >= 2 and n_resolucion == 0 and n_palabras_en_resp < 2:
+        return {"score":1,"nivel":"Genérica","relevancia_pct":relevancia_pct,
+                "motivo":"Respuesta automática: no aborda el tema del usuario.",
+                "sugerencia":"Personalizar la respuesta mencionando el tema específico del comentario."}
+    if redirige and n_resolucion == 0 and longitud < 200:
+        return {"score":1,"nivel":"Genérica","relevancia_pct":relevancia_pct,
+                "motivo":"Solo redirige a otro canal sin dar información útil.",
+                "sugerencia":"Dar al menos una respuesta parcial antes de redirigir al usuario."}
+    if n_resolucion >= 2 and n_palabras_en_resp >= 3 and longitud > 200:
+        return {"score":4,"nivel":"Excelente","relevancia_pct":relevancia_pct,
+                "motivo":f"Respuesta resuelve y confirma acción tomada. Relevancia: {relevancia_pct}%.",
+                "sugerencia":"Mantener este nivel de detalle y personalización."}
+    if (n_palabras_en_resp >= 3 or n_resolucion >= 1) and longitud > 150:
+        return {"score":3,"nivel":"Específica","relevancia_pct":relevancia_pct,
+                "motivo":f"Respuesta aborda el tema del usuario. Relevancia: {relevancia_pct}%.",
+                "sugerencia":"Agregar confirmación de la acción tomada para alcanzar nivel Excelente."}
+    if n_palabras_en_resp >= 2 or (longitud > 200 and n_genericas == 0):
+        return {"score":3,"nivel":"Específica","relevancia_pct":relevancia_pct,
+                "motivo":f"Respuesta personalizada. Relevancia: {relevancia_pct}%.",
+                "sugerencia":"Mencionar explícitamente la solución o próximo paso para el usuario."}
+    if n_genericas >= 1 and longitud < 120:
+        return {"score":1,"nivel":"Genérica","relevancia_pct":relevancia_pct,
+                "motivo":"Respuesta corta y genérica sin abordar la solicitud.",
+                "sugerencia":"Ampliar la respuesta abordando el tema puntual del comentario."}
+    return {"score":2,"nivel":"Parcial","relevancia_pct":relevancia_pct,
+            "motivo":f"Reconoce el tema pero no da solución concreta. Relevancia: {relevancia_pct}%.",
+            "sugerencia":"Incluir pasos concretos o información específica que resuelva la consulta."}
+
+@app.route("/api/validar-calidad", methods=["POST"])
+def api_validar_calidad():
+    body       = request.get_json(force=True, silent=True) or {}
+    comentario = body.get("comentario", "")
+    respuesta  = body.get("respuesta", "")
+    if not comentario:
+        return jsonify({"error": "Falta el comentario"}), 400
+    return jsonify(evaluar_calidad_api(comentario, respuesta))
 
 init_db()
 

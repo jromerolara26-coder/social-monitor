@@ -141,6 +141,7 @@ main{flex:1;padding:28px 32px;max-width:1100px}
     <button class="nav-btn" onclick="showSection('sentimiento',this)">😊 Sentimiento</button>
     <button class="nav-btn" onclick="showSection('evolucion',this)">📈 Evolución Seguidores</button>
     <button class="nav-btn" onclick="showSection('rendimiento',this)">📊 Análisis Rendimiento</button>
+    <button class="nav-btn" onclick="showSection('validador',this)">✅ Validador de Calidad</button>
     <button class="nav-btn" onclick="showSection('conclusiones',this)">🤖 Conclusiones IA</button>
   </nav>
   <div class="sidebar-footer">
@@ -269,26 +270,65 @@ function fmtMin(m){
   return (m/1440).toFixed(1)+' días';
 }
 
+function progBar(pct, color){
+  const c = pct>=80?'#15803d':pct>=50?'#d97706':'#dc2626';
+  return `<div style="height:6px;background:#f0f0f0;border-radius:3px;margin-top:4px;overflow:hidden">
+    <div style="height:100%;width:${Math.min(pct,100)}%;background:${c};border-radius:3px;transition:.4s"></div></div>`;
+}
+
 function buildMetricas(plats){
   if(!Object.keys(plats).length) return emptyState();
-  return Object.entries(plats).map(([nombre,d])=>{
-    const evol = d.evolucion_pct||0;
+  // Totales globales
+  const tots = Object.values(plats).reduce((a,d)=>({
+    coms:a.coms+(d.total_comentarios||0), resp:a.resp+(d.respondidos||0),
+    pubs:a.pubs+(d.publicaciones||0), alcance:a.alcance+(d.alcance||0),
+    likes:a.likes+(d.likes||0), shares:a.shares+(d.shares||0),
+    nuevos:a.nuevos+(d.nuevos_seguidores||0),
+  }),{coms:0,resp:0,pubs:0,alcance:0,likes:0,shares:0,nuevos:0});
+  const tasa_global = tots.coms>0?Math.round(tots.resp/tots.coms*100):0;
+
+  const resumen = `<div style="background:linear-gradient(135deg,#1e3a5f,#1976d2);border-radius:14px;padding:18px 22px;margin-bottom:20px;color:#fff">
+    <div style="font-size:13px;font-weight:700;opacity:.8;margin-bottom:12px">RESUMEN GLOBAL — TODAS LAS PLATAFORMAS</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+      <div style="text-align:center"><div style="font-size:22px;font-weight:800">${fmtNum(tots.coms)}</div><div style="font-size:11px;opacity:.8">💬 Comentarios</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:800">${tasa_global}%</div><div style="font-size:11px;opacity:.8">✅ Tasa respuesta</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:800">${fmtNum(tots.pubs)}</div><div style="font-size:11px;opacity:.8">📝 Publicaciones</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:800">${fmtNum(tots.alcance||0)}</div><div style="font-size:11px;opacity:.8">👁️ Alcance total</div></div>
+    </div>
+  </div>`;
+
+  const cards = Object.entries(plats).map(([nombre,d])=>{
+    const evol  = d.evolucion_pct||0;
     const color = PLAT_COLORS[nombre]||'#1e7abf';
     const label = PLAT_LABELS[nombre]||nombre;
+    const tasa  = d.tasa_respuesta||0;
     return `<div class="plat-card">
       <div class="plat-card-head">
         <div class="plat-icon" style="background:${color}">${label[0]}</div>
-        <div><div class="plat-name">${label}</div><div class="plat-seg">${fmtNum(d.total_comentarios)} comentarios</div></div>
+        <div><div class="plat-name">${label}</div><div class="plat-seg">${fmtNum(d.publicaciones)} publicaciones</div></div>
         <div class="plat-crec ${evol>=0?'pos':'neg'}">${evol>=0?'▲':'▼'} ${Math.abs(evol)}%</div>
       </div>
       <div class="kpi-grid">
-        <div class="kpi-box"><div class="kpi-label">Publicaciones</div><div class="kpi-val">${fmtNum(d.publicaciones)}</div></div>
-        <div class="kpi-box"><div class="kpi-label">Tasa Respuesta</div><div class="kpi-val">${d.tasa_respuesta||0}%</div></div>
-        <div class="kpi-box"><div class="kpi-label">Respondidos</div><div class="kpi-val">${fmtNum(d.respondidos)}</div></div>
-        <div class="kpi-box"><div class="kpi-label">T. Promedio</div><div class="kpi-val">${fmtMin(d.tiempo_promedio_min)}</div></div>
+        <div class="kpi-box"><div class="kpi-label">💬 Comentarios</div><div class="kpi-val">${fmtNum(d.total_comentarios)}</div></div>
+        <div class="kpi-box"><div class="kpi-label">✅ Respondidos</div><div class="kpi-val">${fmtNum(d.respondidos)}</div></div>
+        <div class="kpi-box"><div class="kpi-label">❌ Sin respuesta</div><div class="kpi-val" style="color:#dc2626">${fmtNum(d.no_respondidos||0)}</div></div>
+        <div class="kpi-box"><div class="kpi-label">⏱ T. Promedio</div><div class="kpi-val">${fmtMin(d.tiempo_promedio_min)}</div></div>
       </div>
+      <div style="margin-top:12px;padding:10px;background:#f7faff;border-radius:8px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:#555">
+          <span>Tasa de respuesta</span><span style="color:${tasa>=80?'#15803d':tasa>=50?'#d97706':'#dc2626'}">${tasa}%</span>
+        </div>
+        ${progBar(tasa)}
+      </div>
+      ${d.alcance?`<div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px;text-align:center">
+        <div style="background:#eff6ff;border-radius:6px;padding:6px"><div style="font-weight:700;color:#1d4ed8">${fmtNum(d.alcance)}</div><div style="color:#666">Alcance</div></div>
+        <div style="background:#f0fdf4;border-radius:6px;padding:6px"><div style="font-weight:700;color:#15803d">${fmtNum(d.likes||0)}</div><div style="color:#666">Likes</div></div>
+        <div style="background:#faf5ff;border-radius:6px;padding:6px"><div style="font-weight:700;color:#7c3aed">${fmtNum(d.shares||0)}</div><div style="color:#666">Compartidos</div></div>
+      </div>`:''}
+      ${d.avg_ctr?`<div style="margin-top:6px;font-size:11px;color:#666;text-align:center">CTR: <strong>${d.avg_ctr}%</strong> &nbsp;|&nbsp; T.Visionado: <strong>${d.avg_t_vision?d.avg_t_vision+'s':'—'}</strong> &nbsp;|&nbsp; Nuevos seg: <strong>${fmtNum(d.nuevos_seguidores||0)}</strong></div>`:''}
     </div>`;
   }).join('');
+  return resumen + `<div class="cards-grid">${cards}</div>`;
 }
 
 function buildPost(p, tipo){
@@ -549,10 +589,16 @@ function renderDashboard(data){
     </div>
 
     <div id="sec-temas" class="section">
-      <div class="section-title">🏷️ Análisis de Temas de Impacto</div>
-      <div class="chart-card">
-        <h3>Volumen de menciones por tema</h3>
-        <div class="chart-wrap-tall"><canvas id="chart-temas"></canvas></div>
+      <div class="section-title">🏷️ Análisis de Impacto — Temas</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="chart-card">
+          <h3>Volumen de menciones por tema</h3>
+          <div class="chart-wrap-tall"><canvas id="chart-temas"></canvas></div>
+        </div>
+        <div class="chart-card" style="overflow-y:auto;max-height:360px">
+          <h3>Detalle por tema</h3>
+          ${buildTemasDetalle(data.temas_detalle||{}, data.temas||{})}
+        </div>
       </div>
     </div>
 
@@ -561,13 +607,17 @@ function renderDashboard(data){
       ${buildSentResumen(data.sentimiento||{})}
       <div class="sent-grid">
         <div class="chart-card">
-          <h3>Distribución global de comentarios</h3>
+          <h3>Distribución global</h3>
           <div class="chart-wrap"><canvas id="chart-sent"></canvas></div>
         </div>
         <div class="chart-card">
           <h3>Detalle por categoría</h3>
           <div class="sent-bars" style="padding-top:8px">${buildSentBars(data.sentimiento||{})}</div>
         </div>
+      </div>
+      <div class="chart-card" style="margin-top:16px">
+        <h3>Mensajes por categoría de sentimiento</h3>
+        ${buildSentMsgs(data.sent_msgs||{})}
       </div>
     </div>
 
@@ -577,6 +627,25 @@ function renderDashboard(data){
         <h3>Mes anterior vs. Mes actual</h3>
         <div class="chart-wrap-tall"><canvas id="chart-evol"></canvas></div>
         <div class="crec-badges">${hasData ? buildCrecBadges(plats) : ''}</div>
+      </div>
+    </div>
+
+    <div id="sec-validador" class="section">
+      <div class="section-title">✅ Validador de Calidad de Respuesta</div>
+      <div class="chart-card">
+        <p style="font-size:13px;color:#555;margin-bottom:16px">Pega el mensaje del usuario y la respuesta de ICETEX para evaluar si la respuesta es adecuada y relevante.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px">💬 Mensaje del usuario</label>
+            <textarea id="val-comentario" rows="5" style="width:100%;border:1px solid #d0d9e8;border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical" placeholder="Escribe o pega el comentario del usuario aquí..."></textarea>
+          </div>
+          <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:5px">✍️ Respuesta de ICETEX</label>
+            <textarea id="val-respuesta" rows="5" style="width:100%;border:1px solid #d0d9e8;border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical" placeholder="Escribe o pega la respuesta dada por ICETEX aquí..."></textarea>
+          </div>
+        </div>
+        <button onclick="validarCalidad()" style="background:#1976d2;color:#fff;border:none;border-radius:8px;padding:11px 28px;font-size:14px;font-weight:700;cursor:pointer;width:100%">🔍 Validar calidad de la respuesta</button>
+        <div id="val-resultado" style="display:none;margin-top:20px"></div>
       </div>
     </div>
 
@@ -611,6 +680,158 @@ function cargar(){
     .catch(()=>{
       document.getElementById('contenido').innerHTML='<div class="empty-state"><div class="ico">⚠️</div><p>Error al cargar datos</p></div>';
     });
+}
+
+function buildTemasDetalle(det, temas){
+  const entries = Object.entries(det).sort((a,b)=>b[1].count-a[1].count);
+  if(!entries.length){
+    const fallback = Object.entries(temas).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    if(!fallback.length) return '<p style="color:#aaa;font-size:13px">Sin datos de temas</p>';
+    return fallback.map(([tema,n])=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0">
+        <span style="font-size:13px;font-weight:600;color:#333">${tema}</span>
+        <span style="background:#eff6ff;color:#1d4ed8;font-weight:700;font-size:12px;padding:2px 10px;border-radius:20px">${n}</span>
+      </div>`).join('');
+  }
+  return entries.slice(0,10).map(([tema,d])=>{
+    const tot = d.count||1;
+    const sentBar = Object.entries(d.sent).filter(([,v])=>v>0).map(([tipo,val])=>
+      `<div style="height:100%;width:${(val/tot*100).toFixed(0)}%;background:${SENT_COLORS[tipo]||'#ccc'}" title="${tipo}: ${val}"></div>`
+    ).join('');
+    const respPct = tot>0 ? Math.round(d.respondidos/tot*100) : 0;
+    const ejemplos = (d.ejemplos||[]).slice(0,2).map(e=>{
+      const lbl = PLAT_LABELS[e.plataforma]||e.plataforma||'';
+      const ec  = SENT_COLORS[e.emocion]||'#95a5a6';
+      return `<div style="background:#f8fafc;border-radius:6px;padding:7px 10px;margin-top:5px;border-left:3px solid ${ec}">
+        <div style="font-size:10px;color:#aaa;margin-bottom:2px">${lbl} · <span style="color:${ec};font-weight:700">${e.emocion}</span></div>
+        <div style="font-size:12px;color:#444;line-height:1.4">${(e.texto||'').slice(0,120)}${(e.texto||'').length>120?'…':''}</div>
+      </div>`;
+    }).join('');
+    return `<div style="padding:12px 0;border-bottom:1px solid #f0f4f8">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700;color:#1a2340">${tema}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:11px;color:#666">${d.count} comentarios</span>
+          <span style="font-size:10px;background:${respPct>=70?'#dcfce7':'#fee2e2'};color:${respPct>=70?'#15803d':'#dc2626'};padding:2px 7px;border-radius:10px;font-weight:700">${respPct}% resp.</span>
+        </div>
+      </div>
+      <div style="height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;display:flex;gap:1px;margin-bottom:6px">${sentBar}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+        ${Object.entries(d.sent).filter(([,v])=>v>0).map(([tipo,val])=>
+          `<span style="font-size:10px;background:${SENT_COLORS[tipo]}22;color:${SENT_COLORS[tipo]};padding:1px 7px;border-radius:10px;font-weight:700">${tipo}: ${val}</span>`
+        ).join('')}
+      </div>
+      ${ejemplos}
+    </div>`;
+  }).join('');
+}
+
+function smTab(uid, cat){
+  ['Crítico','Negativo','Positivo','Neutro'].forEach(c=>{
+    const tab   = document.getElementById(`${uid}-tab-${c}`);
+    const panel = document.getElementById(`${uid}-panel-${c}`);
+    if(!tab||!panel) return;
+    const active = c===cat;
+    tab.style.background = active ? (SENT_COLORS[c]||'#aaa') : '#f0f4f8';
+    tab.style.color      = active ? '#fff' : '#555';
+    panel.style.display  = active ? 'block' : 'none';
+  });
+}
+
+function buildSentMsgs(msgs){
+  const cats = ['Crítico','Negativo','Positivo','Neutro'];
+  if(!cats.some(c=>(msgs[c]||[]).length>0))
+    return '<p style="color:#aaa;font-size:13px;text-align:center;padding:20px">Sin mensajes clasificados para este período. <a href="/formulario">Ingresa datos</a></p>';
+  const uid = 'sm'+Date.now();
+  const tabs = cats.map((cat,i)=>{
+    const n = (msgs[cat]||[]).length;
+    const color = SENT_COLORS[cat]||'#aaa';
+    return `<button onclick="smTab('${uid}','${cat}')" id="${uid}-tab-${cat}"
+      style="padding:8px 16px;border:none;border-radius:8px 8px 0 0;font-size:12px;font-weight:700;cursor:pointer;
+             background:${i===0?color:'#f0f4f8'};color:${i===0?'#fff':'#555'};transition:.2s">
+      ${cat} <span style="font-size:11px;opacity:.85">(${n})</span></button>`;
+  }).join('');
+  const panels = cats.map((cat,i)=>{
+    const list  = (msgs[cat]||[]);
+    const color = SENT_COLORS[cat]||'#aaa';
+    const rows  = list.length ? list.map(m=>{
+      const lbl = PLAT_LABELS[m.plataforma]||m.plataforma||'';
+      return `<div style="border:1px solid #f0f0f0;border-radius:10px;padding:12px 14px;margin-bottom:10px;border-left:4px solid ${color}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:11px;color:#666">
+            <strong style="color:#333">${m.usuario||'Usuario'}</strong>
+            ${m.plataforma?` · <span style="color:${PLAT_COLORS[m.plataforma]||'#1e7abf'};font-weight:700">${lbl}</span>`:''}
+            ${m.fecha?` · ${m.fecha}`:''}
+          </div>
+          <span style="font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;background:${m.respondido?'#dcfce7':'#fee2e2'};color:${m.respondido?'#15803d':'#dc2626'}">${m.respondido?'✅ Respondido':'❌ Sin respuesta'}</span>
+        </div>
+        <div style="font-size:13px;color:#333;line-height:1.5;margin-bottom:${m.texto_resp?'8px':'0'}">${m.texto||'(Sin texto)'}</div>
+        ${m.texto_resp?`<div style="background:#f7faff;border-radius:6px;padding:8px 10px;font-size:12px;color:#555;border-left:3px solid #1e7abf">
+          <strong style="font-size:10px;color:#1e7abf;text-transform:uppercase">Respuesta ICETEX:</strong><br>${m.texto_resp}
+        </div>`:''}
+      </div>`;
+    }).join('') : `<div style="text-align:center;padding:24px;color:#aaa;font-size:13px">No hay comentarios ${cat.toLowerCase()} en este período</div>`;
+    return `<div id="${uid}-panel-${cat}" style="display:${i===0?'block':'none'}">${rows}</div>`;
+  }).join('');
+  return `<div>
+    <div style="display:flex;gap:4px;border-bottom:2px solid #e5e9f0;margin-bottom:0;flex-wrap:wrap">${tabs}</div>
+    <div style="padding:14px 0">${panels}</div>
+  </div>`;
+}
+
+async function validarCalidad(){
+  const comentario = document.getElementById('val-comentario').value.trim();
+  const respuesta  = document.getElementById('val-respuesta').value.trim();
+  const resDiv     = document.getElementById('val-resultado');
+  if(!comentario){ alert('Por favor ingresa el mensaje del usuario.'); return; }
+  resDiv.style.display = 'none';
+  const btn = document.querySelector('#sec-validador button');
+  const origText = btn.textContent;
+  btn.textContent = '⏳ Analizando...';
+  btn.disabled = true;
+  try{
+    const r = await fetch('/api/validar-calidad',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({comentario, respuesta})
+    });
+    const d = await r.json();
+    if(d.error) throw new Error(d.error);
+    const scoreColors = ['#dc2626','#f59e0b','#d97706','#1d4ed8','#15803d'];
+    const scoreBgs    = ['#fee2e2','#fffbea','#fff7ed','#eff6ff','#f0fdf4'];
+    const scoreBcs    = ['#fecaca','#fde68a','#fed7aa','#bfdbfe','#bbf7d0'];
+    const sc = d.score||0;
+    const stars = '★'.repeat(sc)+'☆'.repeat(4-sc);
+    const bar = `<div style="height:10px;background:#f0f0f0;border-radius:5px;overflow:hidden;margin-top:8px">
+      <div style="height:100%;width:${sc*25}%;background:${scoreColors[sc]};border-radius:5px;transition:.5s"></div></div>`;
+    resDiv.innerHTML = `
+      <div style="border:2px solid ${scoreBcs[sc]};background:${scoreBgs[sc]};border-radius:14px;padding:20px 24px">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
+          <div style="font-size:40px;font-weight:900;color:${scoreColors[sc]}">${sc}<span style="font-size:16px">/4</span></div>
+          <div>
+            <div style="font-size:18px;font-weight:800;color:${scoreColors[sc]}">${d.nivel||''}</div>
+            <div style="font-size:16px;color:#aaa">${stars}</div>
+          </div>
+          <div style="margin-left:auto;text-align:right">
+            <div style="font-size:11px;color:#666;font-weight:700;text-transform:uppercase">Relevancia</div>
+            <div style="font-size:22px;font-weight:800;color:${scoreColors[sc]}">${d.relevancia_pct||0}%</div>
+          </div>
+        </div>
+        ${bar}
+        <div style="margin-top:14px;background:#fff;border-radius:8px;padding:12px 14px;font-size:13px;color:#333;line-height:1.6">
+          <strong>📋 Análisis:</strong> ${d.motivo||''}
+        </div>
+        <div style="margin-top:10px;background:#fffbea;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;line-height:1.6">
+          <strong>💡 Sugerencia:</strong> ${d.sugerencia||''}
+        </div>
+      </div>`;
+    resDiv.style.display = 'block';
+  } catch(e){
+    resDiv.innerHTML = `<div style="background:#fee2e2;border-radius:8px;padding:12px;color:#dc2626;font-size:13px">⚠️ Error al validar: ${e.message}</div>`;
+    resDiv.style.display = 'block';
+  } finally{
+    btn.textContent = origText;
+    btn.disabled = false;
+  }
 }
 
 // Inicializar con mes actual
