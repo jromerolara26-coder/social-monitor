@@ -283,15 +283,21 @@ function buildMetricas(plats){
 function buildPost(p, tipo){
   const color = PLAT_COLORS[p.plataforma]||'#1e7abf';
   const label = PLAT_LABELS[p.plataforma]||p.plataforma||'?';
-  const recs = tipo==='bajo'?`<div class="rec-box"><strong>💡 Recomendaciones</strong>• Revisar horario de publicación<br>• Mejorar el copy con llamados a la acción</div>`:'';
+  const scoreTag = tipo==='viral'
+    ? `<span class="tag tag-red">🔥 Score viral: ${fmtNum(p.viral_score)}</span>`
+    : `<span class="tag tag-yellow">⚠️ Riesgo: ${p.riesgo}</span>`;
+  const recs = tipo==='bajo'
+    ? `<div class="rec-box"><strong>💡 Recomendaciones</strong>• Revisar horario de publicación<br>• Mejorar el copy y llamados a la acción<br>• Aumentar la tasa de respuesta a comentarios</div>`
+    : '';
   return `<div class="post-card">
     <div class="post-icon" style="background:${color}">${label[0]}</div>
     <div class="post-body">
       <div class="post-text">${p.texto||'(Sin texto)'}</div>
       <div class="tags">
-        <span class="tag tag-blue">💬 ${fmtNum(p.n_coms)} comentarios</span>
-        <span class="tag tag-green">✅ ${fmtNum(p.n_resp)} respondidos</span>
-        <span class="tag tag-purple">📊 Resp: ${p.tasa||0}%</span>
+        ${scoreTag}
+        <span class="tag tag-blue">💬 ${fmtNum(p.n_coms)} coments</span>
+        <span class="tag tag-green">✅ ${p.tasa||0}% respondido</span>
+        <span class="tag tag-gray">👍 ${fmtNum(p.likes||0)} likes &nbsp;🔁 ${fmtNum(p.shares||0)} compartidos</span>
         <span class="tag tag-gray">📌 ${label}</span>
       </div>
       ${recs}
@@ -367,11 +373,21 @@ function renderDashboard(data){
 
     <div id="sec-virales" class="section">
       <div class="section-title">🔥 Posts más Virales</div>
+      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#5d4037">
+        <strong>📐 Fórmula — Score Viral:</strong><br>
+        <code style="background:#fff3cd;padding:2px 6px;border-radius:4px;font-size:12px">Score = (Comentarios × 3) + (Compartidos × 2) + (Likes × 1)</code><br><br>
+        <strong>¿Cómo funciona?</strong> Los comentarios tienen el mayor peso porque generan conversación real y amplían el alcance orgánico. Los compartidos difunden el contenido a nuevas audiencias. Los likes indican aprobación pero tienen menor impacto en visibilidad. Se muestran los <strong>5 posts con mayor score</strong> del período.
+      </div>
       ${data.virales&&data.virales.length ? data.virales.map(p=>buildPost(p,'viral')).join('') : emptyState()}
     </div>
 
     <div id="sec-bajos" class="section">
       <div class="section-title">📉 Posts con Menor Rendimiento</div>
+      <div style="background:#fff5f5;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:#7f1d1d">
+        <strong>📐 Fórmula — Índice de Riesgo:</strong><br>
+        <code style="background:#ffe4e6;padding:2px 6px;border-radius:4px;font-size:12px">Riesgo = (100 − Tasa de respuesta) × 0.7 + max(0, 10 − comentarios) × 3</code><br><br>
+        <strong>¿Cómo funciona?</strong> Penaliza dos factores: una <strong>baja tasa de respuesta</strong> (comentarios sin respuesta de ICETEX, peso 70%) y un <strong>bajo volumen de interacción</strong> (posts con menos de 10 comentarios, peso 30%). A mayor índice, más urgente es revisar ese contenido. Se muestran los <strong>5 posts con mayor riesgo</strong>.
+      </div>
       ${data.bajas&&data.bajas.length ? data.bajas.map(p=>buildPost(p,'bajo')).join('') : emptyState()}
     </div>
 

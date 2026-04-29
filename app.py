@@ -489,12 +489,23 @@ def api_dashboard():
                     plats[plat]["respondidos"]       += n_resp
                     plats[plat]["publicaciones"]     += 1
                     plats[plat]["tiempos"].extend(tiempos)
+                    likes     = pub.get("likes", 0) or 0
+                    shares    = pub.get("shares", 0) or 0
+                    # Viral Score = comentarios×3 + compartidos×2 + likes×1
+                    viral_score = (n_coms * 3) + (shares * 2) + (likes * 1)
+                    tasa = round(n_resp / n_coms * 100, 1) if n_coms > 0 else 0
+                    # Riesgo bajo rendimiento: penaliza baja respuesta y bajo volumen
+                    riesgo = round((100 - tasa) * 0.7 + max(0, 10 - n_coms) * 3, 1)
                     pubs_list.append({
-                        "plataforma": plat,
-                        "texto":  pub.get("texto", ""),
-                        "n_coms": n_coms,
-                        "n_resp": n_resp,
-                        "tasa":   round(n_resp / n_coms * 100, 1) if n_coms > 0 else 0,
+                        "plataforma":  plat,
+                        "texto":       pub.get("texto", ""),
+                        "n_coms":      n_coms,
+                        "n_resp":      n_resp,
+                        "likes":       likes,
+                        "shares":      shares,
+                        "tasa":        tasa,
+                        "viral_score": viral_score,
+                        "riesgo":      riesgo,
                     })
                     for c in coms:
                         t = c.get("tema", "otro")
@@ -533,8 +544,8 @@ def api_dashboard():
             "evolucion_pct":       evol,
         }
 
-    virales = sorted(pubs_c, key=lambda x: x["n_coms"], reverse=True)[:5]
-    bajas   = sorted([p for p in pubs_c if p["n_coms"] > 0], key=lambda x: x["tasa"])[:5]
+    virales = sorted(pubs_c, key=lambda x: x["viral_score"], reverse=True)[:5]
+    bajas   = sorted(pubs_c, key=lambda x: x["riesgo"], reverse=True)[:5]
     temas_s = dict(sorted(temas_c.items(), key=lambda x: x[1], reverse=True))
     conclusiones = generar_conclusiones(plataformas, sent_c, temas_s)
 
