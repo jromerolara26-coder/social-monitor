@@ -310,7 +310,24 @@ def generar():
 @app.route("/reporte")
 def reporte():
     if not os.path.exists(HTML_OUT):
-        return "<h2 style='font-family:sans-serif;padding:40px'>Aún no se ha generado el reporte.</h2>"
+        return """<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'>
+        <style>body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;display:flex;
+        align-items:center;justify-content:center;min-height:100vh;margin:0}
+        .box{background:#fff;border-radius:16px;padding:40px 48px;box-shadow:0 4px 24px rgba(0,0,0,.1);
+        text-align:center;max-width:460px}
+        h2{color:#1a2340;margin-bottom:12px;font-size:1.3rem}
+        p{color:#666;font-size:.9rem;margin-bottom:24px;line-height:1.6}
+        a{display:inline-block;background:#1976d2;color:#fff;padding:12px 28px;border-radius:10px;
+        text-decoration:none;font-weight:700;font-size:.95rem}
+        a:hover{background:#1565c0}</style></head>
+        <body><div class='box'>
+        <div style='font-size:48px;margin-bottom:16px'>📊</div>
+        <h2>El reporte aún no ha sido generado</h2>
+        <p>Para generar el reporte ve al panel de administrador,<br>
+        asegúrate de tener envíos cargados y haz clic en<br>
+        <strong>"📊 Generar reporte ahora"</strong>.</p>
+        <a href='/admin'>Ir al Administrador</a>
+        </div></body></html>"""
     return send_file(HTML_OUT)
 
 @app.route("/descargar-excel")
