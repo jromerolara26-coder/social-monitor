@@ -31,6 +31,7 @@ td{padding:9px 12px;vertical-align:middle}
 .btn-s{background:#217346;color:#fff}.btn-s:hover{background:#185c37}
 .btn-d{background:#e53935;color:#fff}.btn-d:hover{background:#c62828}
 .btn-p{background:#1976d2;color:#fff}.btn-p:hover{background:#1565c0}
+.btn-e{background:#f57c00;color:#fff}.btn-e:hover{background:#e65100}
 .btn-sm{padding:4px 10px;font-size:.75rem}
 .btn-bl{width:100%;justify-content:center;padding:13px;font-size:.95rem}
 .empty{text-align:center;color:#aaa;padding:32px}
@@ -42,17 +43,66 @@ td{padding:9px 12px;vertical-align:middle}
 .r-err{background:#fce8e8;border:1px solid #ef9a9a;color:#c62828}
 .acciones{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 #loader{display:none;font-size:.85rem;color:#1976d2;font-weight:700}
+
+/* ── DRAWER EDICIÓN ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100}
+.drawer{position:fixed;top:0;right:-780px;width:min(780px,100vw);height:100vh;
+  background:#fff;z-index:101;box-shadow:-4px 0 24px rgba(0,0,0,.18);
+  transition:right .3s ease;display:flex;flex-direction:column}
+.drawer.open{right:0}
+.drawer-hdr{background:linear-gradient(135deg,#0a4b8c,#1976d2);color:#fff;
+  padding:18px 22px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.drawer-hdr h2{font-size:1rem;font-weight:800;flex:1}
+.drawer-close{background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:7px;
+  padding:6px 14px;font-size:.85rem;font-weight:700;cursor:pointer}
+.drawer-close:hover{background:rgba(255,255,255,.35)}
+.drawer-body{flex:1;overflow-y:auto;padding:20px}
+.drawer-footer{padding:14px 22px;border-top:1px solid #e5e9f0;display:flex;gap:10px;flex-shrink:0;background:#fafbff}
+
+/* Plataforma bloque */
+.plat-block{margin-bottom:22px}
+.plat-title{font-size:.9rem;font-weight:800;color:#1565c0;padding:8px 12px;
+  background:#e8f0fe;border-radius:8px;margin-bottom:10px}
+.pub-block{border:1px solid #e0e8ff;border-radius:10px;margin-bottom:12px;overflow:hidden}
+.pub-title{background:#f0f4ff;padding:8px 14px;font-size:.8rem;font-weight:700;color:#0a4b8c;
+  display:flex;align-items:center;gap:8px}
+.pub-fields{padding:12px 14px;border-bottom:1px solid #e0e8ff}
+.pub-fields label{display:block;font-size:.7rem;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:3px;margin-top:8px}
+.pub-fields input,.pub-fields textarea{width:100%;border:1px solid #d0d9e8;border-radius:6px;
+  padding:6px 10px;font-size:.84rem;font-family:inherit}
+.pub-fields input:focus,.pub-fields textarea:focus{outline:none;border-color:#1976d2}
+.pub-fields textarea{resize:vertical;min-height:48px}
+
+/* Comentario */
+.com-block{border-top:1px dashed #d0deff;padding:12px 14px;position:relative}
+.com-num{font-size:.7rem;font-weight:800;color:#1565c0;text-transform:uppercase;margin-bottom:8px}
+.com-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.com-grid label{display:block;font-size:.7rem;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:3px}
+.com-grid input,.com-grid textarea,.com-grid select{width:100%;border:1px solid #d0d9e8;border-radius:6px;
+  padding:6px 10px;font-size:.83rem;font-family:inherit}
+.com-grid input:focus,.com-grid textarea:focus,.com-grid select:focus{outline:none;border-color:#1976d2}
+.resp-block{grid-column:1/-1;border:1px solid #d0deff;border-radius:8px;padding:10px;background:#f8f9ff;margin-top:4px}
+.resp-block label{display:block;font-size:.7rem;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:3px}
+.resp-block textarea{width:100%;border:1px solid #d0d9e8;border-radius:6px;
+  padding:6px 10px;font-size:.83rem;font-family:inherit;resize:vertical;min-height:52px}
+.em-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:700;margin-left:6px}
+.em-Positivo{background:#dcfce7;color:#15803d}
+.em-Negativo{background:#fff7ed;color:#c2410c}
+.em-Crítico{background:#fee2e2;color:#dc2626}
+.em-Neutro{background:#f3f4f6;color:#4b5563}
+.no-coms{color:#aaa;font-size:.82rem;padding:10px 14px}
 </style>
 </head>
 <body>
 <header class="hdr">
   <div>
     <h1>⚙️ Panel de Administrador — Social Monitor</h1>
-    <p>Aquí ves todos los envíos del equipo y generas el reporte consolidado.</p>
+    <p>Administra los envíos, edita comentarios y genera el reporte consolidado.</p>
   </div>
   <div class="hdr-links">
     <a href="/formulario">📋 Formulario</a>
-    {% if reporte_existe %}<a href="/reporte" target="_blank">📊 Ver Reporte</a>{% endif %}
+    <a href="/dashboard">📊 Dashboard</a>
+    {% if reporte_existe %}<a href="/reporte" target="_blank">📄 Ver Reporte</a>{% endif %}
   </div>
 </header>
 
@@ -63,7 +113,7 @@ td{padding:9px 12px;vertical-align:middle}
   <div class="card">
     <div class="sec">🚀 Generar reporte consolidado</div>
     <p style="color:#555;font-size:.85rem;margin-bottom:14px">
-      Consolida todos los envíos recibidos y genera el reporte HTML y Excel con las gráficas.
+      Consolida todos los envíos y genera el reporte HTML y Excel con gráficas.
     </p>
     <div class="acciones">
       <button class="btn btn-s" onclick="generar()">📊 Generar reporte ahora</button>
@@ -84,13 +134,9 @@ td{padding:9px 12px;vertical-align:middle}
         <tr>
           <th>#</th>
           <th>Analista</th>
-          <th>Facebook</th>
-          <th>Instagram</th>
-          <th>Posts FB</th>
-          <th>Posts IG</th>
           <th>Comentarios</th>
           <th>Fecha envío</th>
-          <th>Acción</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -98,17 +144,18 @@ td{padding:9px 12px;vertical-align:middle}
         <tr>
           <td>{{ e.id }}</td>
           <td><strong>{{ e.analista }}</strong></td>
-          <td><span class="badge b-fb">{{ e.fb or '—' }}</span></td>
-          <td><span class="badge b-ig">{{ e.ig or '—' }}</span></td>
-          <td style="text-align:center">{{ e.n_fb }}</td>
-          <td style="text-align:center">{{ e.n_ig }}</td>
-          <td style="text-align:center">{{ e.coms }}</td>
+          <td style="text-align:center"><strong>{{ e.coms }}</strong></td>
           <td style="color:#666">{{ e.fecha }}</td>
           <td>
-            <form method="POST" action="/eliminar/{{ e.id }}"
-                  onsubmit="return confirm('¿Eliminar el envío de {{ e.analista }}?')">
-              <button class="btn btn-d btn-sm" type="submit">✕ Eliminar</button>
-            </form>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-e btn-sm" onclick="abrirEditor({{ e.id }}, '{{ e.analista }}')">
+                ✏️ Editar
+              </button>
+              <form method="POST" action="/eliminar/{{ e.id }}"
+                    onsubmit="return confirm('¿Eliminar el envío de {{ e.analista }}?')" style="margin:0">
+                <button class="btn btn-d btn-sm" type="submit">✕ Eliminar</button>
+              </form>
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -124,7 +171,36 @@ td{padding:9px 12px;vertical-align:middle}
   </div>
 </div>
 
+<!-- OVERLAY + DRAWER -->
+<div class="overlay" id="overlay" onclick="cerrarEditor()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-hdr">
+    <h2 id="drawer-title">✏️ Editar envío</h2>
+    <button class="drawer-close" onclick="cerrarEditor()">✕ Cerrar</button>
+  </div>
+  <div class="drawer-body" id="drawer-body">
+    <div style="text-align:center;padding:40px;color:#aaa">Cargando...</div>
+  </div>
+  <div class="drawer-footer">
+    <button class="btn btn-s" onclick="guardarCambios()" style="flex:1;justify-content:center">
+      💾 Guardar todos los cambios
+    </button>
+    <button class="btn btn-p" onclick="cerrarEditor()" style="width:120px;justify-content:center">
+      Cancelar
+    </button>
+  </div>
+</div>
+
 <script>
+let currentEid = null;
+let currentDatos = {};
+
+const PLAT_LABELS = {
+  facebook:'📘 Facebook', instagram:'📸 Instagram', twitter:'🐦 X / Twitter',
+  linkedin:'💼 LinkedIn', tiktok:'🎵 TikTok', youtube:'▶️ YouTube'
+};
+const EM_OPTS = ['Positivo','Negativo','Crítico','Neutro'];
+
 async function generar(){
   const btn=document.querySelector('.btn-s');
   const loader=document.getElementById('loader');
@@ -137,10 +213,176 @@ async function generar(){
     el.textContent=(d.ok?'✅ ':'❌ ')+d.mensaje;
     el.style.display='block';
     if(d.ok) setTimeout(()=>location.reload(),1500);
-  } catch(e){
+  }catch(e){
     const el=document.getElementById('resultado');
     el.className='r-err';el.textContent='❌ Error: '+e.message;el.style.display='block';
-  } finally{btn.disabled=false;loader.style.display='none';}
+  }finally{btn.disabled=false;loader.style.display='none';}
+}
+
+async function abrirEditor(eid, analista){
+  currentEid = eid;
+  document.getElementById('drawer-title').textContent = `✏️ Editar — ${analista} (ID ${eid})`;
+  document.getElementById('drawer-body').innerHTML = '<div style="text-align:center;padding:40px;color:#aaa">⏳ Cargando datos...</div>';
+  document.getElementById('overlay').style.display='block';
+  document.getElementById('drawer').classList.add('open');
+  document.body.style.overflow='hidden';
+
+  const r = await fetch(`/admin/envio/${eid}`);
+  const json = await r.json();
+  if(!json.ok){ alert('Error al cargar datos'); return; }
+
+  currentDatos = json.datos;
+  renderEditor(currentDatos);
+}
+
+function cerrarEditor(){
+  document.getElementById('overlay').style.display='none';
+  document.getElementById('drawer').classList.remove('open');
+  document.body.style.overflow='';
+  currentEid = null;
+  currentDatos = {};
+}
+
+function renderEditor(datos){
+  const plats = Object.keys(datos).filter(p => (datos[p]||[]).length > 0);
+  if(!plats.length){
+    document.getElementById('drawer-body').innerHTML =
+      '<div style="text-align:center;color:#aaa;padding:40px">Este envío no tiene publicaciones.</div>';
+    return;
+  }
+
+  let html = '';
+  plats.forEach(plat => {
+    const pubs = datos[plat] || [];
+    const platLabel = PLAT_LABELS[plat] || plat;
+    html += `<div class="plat-block">
+      <div class="plat-title">${platLabel} — ${pubs.length} publicación(es)</div>`;
+
+    pubs.forEach((pub, pi) => {
+      const coms = pub.comentarios || [];
+      html += `<div class="pub-block">
+        <div class="pub-title">
+          📄 Publicación ${pi+1}
+          <span style="color:#666;font-weight:400;font-size:.75rem;margin-left:4px">${(pub.texto||'').substring(0,60)}${pub.texto&&pub.texto.length>60?'...':''}</span>
+        </div>
+        <div class="pub-fields">
+          <label>Texto del post</label>
+          <textarea rows="2" onchange="setPub('${plat}',${pi},'texto',this.value)">${esc(pub.texto||'')}</textarea>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px">
+            <div><label>Likes</label>
+              <input type="number" min="0" value="${pub.likes||0}" onchange="setPub('${plat}',${pi},'likes',+this.value)"></div>
+            <div><label>Compartidos</label>
+              <input type="number" min="0" value="${pub.shares||0}" onchange="setPub('${plat}',${pi},'shares',+this.value)"></div>
+            <div><label>URL</label>
+              <input type="url" value="${esc(pub.url||'')}" onchange="setPub('${plat}',${pi},'url',this.value)"></div>
+          </div>
+        </div>`;
+
+      if(coms.length === 0){
+        html += `<div class="no-coms">Sin comentarios en esta publicación.</div>`;
+      } else {
+        coms.forEach((c, ci) => {
+          const em = c.emocion||'Neutro';
+          const emOpts = EM_OPTS.map(o=>`<option value="${o}" ${o===em?'selected':''}>${o}</option>`).join('');
+          html += `<div class="com-block">
+            <div class="com-num">
+              Comentario ${ci+1}
+              <span class="em-badge em-${em}">${em}</span>
+            </div>
+            <div class="com-grid">
+              <div>
+                <label>Usuario</label>
+                <input type="text" value="${esc(c.usuario||'')}" onchange="setCom('${plat}',${pi},${ci},'usuario',this.value)">
+              </div>
+              <div>
+                <label>Fecha comentario</label>
+                <input type="datetime-local" value="${toLocal(c.fecha)}" onchange="setCom('${plat}',${pi},${ci},'fecha',new Date(this.value).toISOString())">
+              </div>
+              <div style="grid-column:1/-1">
+                <label>Texto del comentario</label>
+                <textarea rows="2" onchange="setCom('${plat}',${pi},${ci},'texto',this.value)">${esc(c.texto||'')}</textarea>
+              </div>
+              <div>
+                <label>Emoción detectada</label>
+                <select onchange="setCom('${plat}',${pi},${ci},'emocion',this.value);updEm(this,'${plat}',${pi},${ci})">${emOpts}</select>
+              </div>
+              <div>
+                <label>Tema</label>
+                <input type="text" value="${esc(c.tema||'')}" onchange="setCom('${plat}',${pi},${ci},'tema',this.value)">
+              </div>
+              <div class="resp-block">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                  <label style="margin:0">¿Respondido?</label>
+                  <select onchange="setCom('${plat}',${pi},${ci},'respondido',this.value==='si');togResp(this,'${plat}',${pi},${ci})">
+                    <option value="si" ${c.respondido?'selected':''}>Sí</option>
+                    <option value="no" ${!c.respondido?'selected':''}>No</option>
+                  </select>
+                  ${c.respondido&&c.tiempo_respuesta_min!=null?`<span style="font-size:.75rem;color:#666">⏱ ${fmtMin(c.tiempo_respuesta_min)}</span>`:''}
+                </div>
+                <div id="resp_${plat}_${pi}_${ci}" style="${c.respondido?'':'display:none'}">
+                  <label>Fecha de respuesta</label>
+                  <input type="datetime-local" value="${toLocal(c.fecha_resp)}" style="margin-bottom:6px"
+                    onchange="setCom('${plat}',${pi},${ci},'fecha_resp',new Date(this.value).toISOString())">
+                  <label>Texto de la respuesta</label>
+                  <textarea rows="3" onchange="setCom('${plat}',${pi},${ci},'texto_respuesta',this.value)">${esc(c.texto_respuesta||'')}</textarea>
+                </div>
+              </div>
+            </div>
+          </div>`;
+        });
+      }
+      html += `</div>`;
+    });
+    html += `</div>`;
+  });
+
+  document.getElementById('drawer-body').innerHTML = html;
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toLocal(iso){ if(!iso) return ''; try{ return new Date(iso).toISOString().slice(0,16); }catch(e){ return ''; } }
+function fmtMin(m){ if(!m&&m!==0) return '—'; const h=Math.floor(m/60),mm=Math.round(m%60); return h?`${h}h ${mm}min`:`${mm}min`; }
+
+function setPub(plat, pi, key, val){
+  if(currentDatos[plat]&&currentDatos[plat][pi]) currentDatos[plat][pi][key]=val;
+}
+function setCom(plat, pi, ci, key, val){
+  const c = currentDatos[plat]&&currentDatos[plat][pi]&&currentDatos[plat][pi].comentarios&&currentDatos[plat][pi].comentarios[ci];
+  if(c) currentDatos[plat][pi].comentarios[ci][key]=val;
+}
+function togResp(sel, plat, pi, ci){
+  const el = document.getElementById(`resp_${plat}_${pi}_${ci}`);
+  if(el) el.style.display = sel.value==='si' ? '' : 'none';
+}
+function updEm(sel, plat, pi, ci){
+  setCom(plat,pi,ci,'emocion',sel.value);
+  const badge = sel.closest('.com-block').querySelector('.em-badge');
+  if(badge){ badge.className='em-badge em-'+sel.value; badge.textContent=sel.value; }
+}
+
+async function guardarCambios(){
+  if(!currentEid) return;
+  const btn = document.querySelector('.drawer-footer .btn-s');
+  btn.disabled=true; btn.textContent='⏳ Guardando...';
+  try{
+    const r = await fetch(`/admin/envio/${currentEid}/guardar`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({datos:currentDatos})
+    });
+    const d = await r.json();
+    if(d.ok){
+      btn.textContent='✅ Guardado';
+      btn.style.background='#15803d';
+      setTimeout(()=>{ btn.textContent='💾 Guardar todos los cambios'; btn.style.background=''; btn.disabled=false; },2000);
+    } else {
+      alert('Error al guardar: '+d.mensaje);
+      btn.disabled=false; btn.textContent='💾 Guardar todos los cambios';
+    }
+  }catch(e){
+    alert('Error de conexión: '+e.message);
+    btn.disabled=false; btn.textContent='💾 Guardar todos los cambios';
+  }
 }
 </script>
 </body>

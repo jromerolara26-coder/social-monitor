@@ -422,6 +422,37 @@ def ingresar_metricas():
                            mes_actual=datetime.now().month,
                            anio_actual=datetime.now().year)
 
+@app.route("/admin/envio/<int:eid>")
+def get_envio(eid):
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM envios WHERE id=%s", (eid,))
+            row = cur.fetchone()
+    finally:
+        conn.close()
+    if not row:
+        return jsonify({"ok": False}), 404
+    try:
+        datos = json.loads(row["datos"])
+    except Exception:
+        datos = {}
+    return jsonify({"ok": True, "id": eid, "analista": row["analista"], "datos": datos})
+
+@app.route("/admin/envio/<int:eid>/guardar", methods=["POST"])
+def save_envio(eid):
+    body  = request.get_json(force=True, silent=True) or {}
+    datos = body.get("datos", {})
+    conn  = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE envios SET datos=%s WHERE id=%s",
+                        (json.dumps(datos, ensure_ascii=False), eid))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"ok": True, "mensaje": "Cambios guardados correctamente."})
+
 @app.route("/dashboard/pub/eliminar/<int:pid>", methods=["POST"])
 def eliminar_pub(pid):
     conn = get_db()
