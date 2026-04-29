@@ -998,15 +998,16 @@ def exportar_excel(datos: Dict[str, List[Dict]], metricas_plat: Dict, mg: Dict,
         color_plat = COLOR_PLAT.get(plat, AZUL_ICETEX)
 
         sla_h = sla_config.get(plat, 24)
-        ws2.merge_cells("A1:J1")
+        ws2.merge_cells("A1:M1")
         ws2["A1"] = f"{PLAT_NOMBRES.get(plat, plat)} — SLA: {sla_h}h"
         ws2["A1"].font = Font(bold=True, color=BLANCO, size=12)
         ws2["A1"].fill = hdr_fill(color_plat)
         ws2["A1"].alignment = center()
         ws2.row_dimensions[1].height = 28
 
-        hdrs = ["Fecha", "Publicación", "Usuario", "Comentario", "Tema",
-                "Respondido", "Tiempo Resp.", "Cumple SLA", "Calidad", "Emoción", "Texto Respuesta"]
+        hdrs = ["Fecha Pub.", "Fecha Carga", "Analista", "Publicación", "Usuario",
+                "Comentario", "Tema", "Respondido", "Tiempo Resp.",
+                "Cumple SLA", "Calidad", "Emoción", "Texto Respuesta"]
         for col, h in enumerate(hdrs, 1):
             cell = ws2.cell(row=2, column=col, value=h)
             cell.font = bold_font(BLANCO)
@@ -1017,6 +1018,9 @@ def exportar_excel(datos: Dict[str, List[Dict]], metricas_plat: Dict, mg: Dict,
 
         fila = 3
         for pub in pubs:
+            fecha_pub   = str(pub.get("fecha", ""))[:10] or "—"
+            fecha_carga = str(pub.get("fecha_carga", ""))[:10] or "—"
+            analista_c  = pub.get("analista_carga", "") or "—"
             for com in pub["comentarios"]:
                 respondido = com["respondido"]
                 t_resp     = com["tiempo_respuesta_min"]
@@ -1024,7 +1028,9 @@ def exportar_excel(datos: Dict[str, List[Dict]], metricas_plat: Dict, mg: Dict,
                 calidad    = com["calidad"]
 
                 vals = [
-                    com["fecha"][:10] if com["fecha"] else "",
+                    fecha_pub,
+                    fecha_carga,
+                    analista_c,
                     pub["texto"][:80],
                     com["usuario"],
                     com["texto"][:120],
@@ -1041,28 +1047,27 @@ def exportar_excel(datos: Dict[str, List[Dict]], metricas_plat: Dict, mg: Dict,
                     cell.alignment = left()
                     cell.border = border_thin
 
-                    if col == 6:  # Respondido
-                        cell.font = Font(bold=True,
-                                         color=VERDE if respondido else ROJO)
+                    if col == 8:  # Respondido
+                        cell.font = Font(bold=True, color=VERDE if respondido else ROJO)
                         cell.alignment = center()
-                    if col == 8:  # Cumple SLA
+                    if col == 10:  # Cumple SLA
                         cell.alignment = center()
                         if cumple is True:
                             cell.font = Font(bold=True, color=VERDE)
                         elif cumple is False:
                             cell.font = Font(bold=True, color=ROJO)
-                    if col == 9:  # Calidad
+                    if col == 11:  # Calidad
                         c_map = {0: ROJO, 1: NARANJA, 2: AZUL_CLARO, 3: VERDE}
                         cell.font = Font(bold=True, color=c_map.get(calidad["score"], "000000"))
                         cell.alignment = center()
-                    if col == 10:  # Emoción
+                    if col == 12:  # Emoción
                         e_map = {"Positivo": VERDE, "Negativo": NARANJA, "Crítico": ROJO, "Neutro": "7F8C8D"}
                         cell.font = Font(bold=True, color=e_map.get(com.get("emocion", "Neutro"), "000000"))
                         cell.alignment = center()
                 fila += 1
 
         ws2.freeze_panes = "A3"
-        for w, col in zip([12, 30, 18, 40, 22, 10, 12, 11, 12, 12, 45], range(1, 12)):
+        for w, col in zip([12, 12, 16, 30, 18, 40, 22, 10, 12, 11, 12, 12, 45], range(1, 14)):
             ws2.column_dimensions[get_column_letter(col)].width = w
 
     try:
@@ -1288,8 +1293,13 @@ def generar_reporte(datos: Dict[str, List[Dict]], config: Dict,
 
         rows = ""
         for pub in pubs:
-            pub_texto = html_lib.escape(pub["texto"][:70]) + ("…" if len(pub["texto"]) > 70 else "")
-            pub_url   = pub.get("url", "#")
+            pub_texto    = html_lib.escape(pub["texto"][:70]) + ("…" if len(pub["texto"]) > 70 else "")
+            pub_url      = pub.get("url", "#")
+            # Fecha de la publicación en red social (primeros 10 chars = YYYY-MM-DD)
+            fecha_pub    = str(pub.get("fecha", ""))[:10] or "—"
+            # Fecha en que el analista cargó la información al sistema
+            fecha_carga  = str(pub.get("fecha_carga", ""))[:10] or "—"
+            analista_c   = html_lib.escape(pub.get("analista_carga", "") or "")
             for com in pub["comentarios"]:
                 txt_r   = com.get("texto_respuesta") or ""
                 tr_min  = com.get("tiempo_respuesta_min")
@@ -1302,8 +1312,16 @@ def generar_reporte(datos: Dict[str, List[Dict]], config: Dict,
                     sla_badge = '<span style="color:#aaa">—</span>'
 
                 rows += f"""<tr>
-                  <td><a href="{pub_url}" target="_blank" class="pub-link"
-                      title="{html_lib.escape(pub['texto'])}">{pub_texto}</a></td>
+                  <td>
+                    <a href="{pub_url}" target="_blank" class="pub-link"
+                       title="{html_lib.escape(pub['texto'])}">{pub_texto}</a>
+                    <div style="margin-top:4px;display:flex;flex-direction:column;gap:2px">
+                      <span style="font-size:10px;color:#1976d2;font-weight:700;white-space:nowrap">
+                        📅 Pub: {fecha_pub}</span>
+                      <span style="font-size:10px;color:#666;white-space:nowrap">
+                        📤 Carga: {fecha_carga}{(' · '+analista_c) if analista_c else ''}</span>
+                    </div>
+                  </td>
                   <td class="nowrap">{html_lib.escape(str(com['usuario']))}</td>
                   <td title="{html_lib.escape(com['texto'])}">{html_lib.escape(com['texto'][:90])}{'…' if len(com['texto'])>90 else ''}</td>
                   <td><span class="tag">{com['tema']}</span></td>
@@ -1340,7 +1358,7 @@ def generar_reporte(datos: Dict[str, List[Dict]], config: Dict,
           <div class="tbl-wrap">
             <table>
               <thead><tr>
-                <th>Publicación</th><th>Usuario</th><th>Comentario</th>
+                <th>Publicación · Fechas</th><th>Usuario</th><th>Comentario</th>
                 <th>Tema</th><th>Respondido</th><th>Tiempo Resp.</th>
                 <th>Cumple SLA</th><th>Calidad</th><th>Emoción</th><th>Texto Respuesta</th>
               </tr></thead>

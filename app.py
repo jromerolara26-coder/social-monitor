@@ -375,15 +375,16 @@ def consolidar_datos():
         try:
             d = json.loads(row["datos"])
             analistas.append(row["analista"] or "Anónimo")
+            fecha_carga  = str(row["fecha"])[:10] if row["fecha"] else ""
+            analista_row = row["analista"] or "Anónimo"
             if row["sla"]:
                 s = json.loads(row["sla"])
                 sla_final.update(s)
-            consolidado["facebook"]  += d.get("facebook",  [])
-            consolidado["instagram"] += d.get("instagram", [])
-            consolidado["twitter"]   += d.get("twitter",   [])
-            consolidado["linkedin"]  += d.get("linkedin",  [])
-            consolidado["tiktok"]    += d.get("tiktok",    [])
-            consolidado["youtube"]   += d.get("youtube",   [])
+            for plat in ["facebook", "instagram", "twitter", "linkedin", "tiktok", "youtube"]:
+                for pub in d.get(plat, []):
+                    pub["fecha_carga"]  = fecha_carga
+                    pub["analista_carga"] = analista_row
+                consolidado[plat] += d.get(plat, [])
         except Exception:
             continue
     return consolidado, analistas, sla_final
