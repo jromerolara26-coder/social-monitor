@@ -786,35 +786,73 @@ function buildSentMsgs(msgs){
     const n = (msgs[cat]||[]).length;
     const color = SENT_COLORS[cat]||'#aaa';
     return `<button onclick="smTab('${uid}','${cat}')" id="${uid}-tab-${cat}"
-      style="padding:8px 16px;border:none;border-radius:8px 8px 0 0;font-size:12px;font-weight:700;cursor:pointer;
+      style="padding:8px 18px;border:none;border-radius:8px 8px 0 0;font-size:12px;font-weight:700;cursor:pointer;
              background:${i===0?color:'#f0f4f8'};color:${i===0?'#fff':'#555'};transition:.2s">
       ${cat} <span style="font-size:11px;opacity:.85">(${n})</span></button>`;
   }).join('');
+
   const panels = cats.map((cat,i)=>{
     const list  = (msgs[cat]||[]);
     const color = SENT_COLORS[cat]||'#aaa';
     const rows  = list.length ? list.map(m=>{
-      const lbl = PLAT_LABELS[m.plataforma]||m.plataforma||'';
-      return `<div style="border:1px solid #f0f0f0;border-radius:10px;padding:12px 14px;margin-bottom:10px;border-left:4px solid ${color}">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div style="font-size:11px;color:#666">
-            <strong style="color:#333">${m.usuario||'Usuario'}</strong>
-            ${m.plataforma?` · <span style="color:${PLAT_COLORS[m.plataforma]||'#1e7abf'};font-weight:700">${lbl}</span>`:''}
-            ${m.fecha?` · ${m.fecha}`:''}
+      const lbl  = PLAT_LABELS[m.plataforma]||m.plataforma||'';
+      const pc   = PLAT_COLORS[m.plataforma]||'#1e7abf';
+      const link = m.pub_url && m.pub_url.startsWith('http')
+        ? `<a href="${m.pub_url}" target="_blank" rel="noopener"
+             style="font-size:10px;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;
+                    padding:2px 9px;border-radius:10px;text-decoration:none;white-space:nowrap;flex-shrink:0">
+             🔗 Ver publicación</a>`
+        : '';
+      const pubBanner = m.pub_texto
+        ? `<div style="background:#f0f4ff;border-radius:6px;padding:6px 10px;margin-bottom:8px;
+                       font-size:11px;color:#1a2340;border-left:3px solid ${pc};
+                       display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+             <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">
+               <strong style="color:${pc}">📌 ${lbl}:</strong> ${m.pub_texto}${m.pub_texto.length>=70?'…':''}
+             </span>
+             ${link}
+           </div>`
+        : link
+          ? `<div style="text-align:right;margin-bottom:6px">${link}</div>`
+          : '';
+      return `<div style="border:1px solid #f0f0f0;border-radius:12px;padding:14px 16px;
+                          margin-bottom:12px;border-left:4px solid ${color}">
+        ${pubBanner}
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-size:12px;font-weight:700;color:#1a2340">${m.usuario||'Usuario desconocido'}</span>
+            ${m.plataforma
+              ? `<span style="font-size:10px;background:${pc}18;color:${pc};padding:1px 7px;border-radius:10px;font-weight:700;border:1px solid ${pc}33">${lbl}</span>`
+              : ''}
+            ${m.fecha ? `<span style="font-size:10px;color:#aaa">${m.fecha}</span>` : ''}
           </div>
-          <span style="font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;background:${m.respondido?'#dcfce7':'#fee2e2'};color:${m.respondido?'#15803d':'#dc2626'}">${m.respondido?'✅ Respondido':'❌ Sin respuesta'}</span>
+          <span style="font-size:10px;padding:2px 9px;border-radius:10px;font-weight:700;flex-shrink:0;
+                       background:${m.respondido?'#dcfce7':'#fee2e2'};
+                       color:${m.respondido?'#15803d':'#dc2626'}">
+            ${m.respondido?'✅ Respondido':'❌ Sin respuesta'}
+          </span>
         </div>
-        <div style="font-size:13px;color:#333;line-height:1.5;margin-bottom:${m.texto_resp?'8px':'0'}">${m.texto||'(Sin texto)'}</div>
-        ${m.texto_resp?`<div style="background:#f7faff;border-radius:6px;padding:8px 10px;font-size:12px;color:#555;border-left:3px solid #1e7abf">
-          <strong style="font-size:10px;color:#1e7abf;text-transform:uppercase">Respuesta ICETEX:</strong><br>${m.texto_resp}
-        </div>`:''}
+        <div style="font-size:13px;color:#333;line-height:1.55;margin-bottom:${m.texto_resp?'10px':'0'}">
+          ${m.texto||'(Sin texto)'}
+        </div>
+        ${m.texto_resp
+          ? `<div style="background:#f7faff;border-radius:7px;padding:9px 12px;
+                         font-size:12px;color:#555;border-left:3px solid #1e7abf">
+               <strong style="font-size:10px;color:#1e7abf;text-transform:uppercase;
+                              letter-spacing:.3px">Respuesta ICETEX:</strong><br>
+               <span style="line-height:1.5">${m.texto_resp}</span>
+             </div>`
+          : ''}
       </div>`;
-    }).join('') : `<div style="text-align:center;padding:24px;color:#aaa;font-size:13px">No hay comentarios ${cat.toLowerCase()} en este período</div>`;
+    }).join('') : `<div style="text-align:center;padding:32px;color:#aaa;font-size:13px">
+      No hay comentarios ${cat.toLowerCase()} en este período
+    </div>`;
     return `<div id="${uid}-panel-${cat}" style="display:${i===0?'block':'none'}">${rows}</div>`;
   }).join('');
+
   return `<div>
-    <div style="display:flex;gap:4px;border-bottom:2px solid #e5e9f0;margin-bottom:0;flex-wrap:wrap">${tabs}</div>
-    <div style="padding:14px 0">${panels}</div>
+    <div style="display:flex;gap:4px;border-bottom:2px solid #e5e9f0;flex-wrap:wrap">${tabs}</div>
+    <div style="padding:16px 0">${panels}</div>
   </div>`;
 }
 

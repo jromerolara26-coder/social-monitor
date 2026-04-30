@@ -411,6 +411,35 @@ def formulario():
     }
     return render_template("formulario.html", sla=sla)
 
+def _pub_fingerprint(pub: dict) -> str:
+    """Clave única de una publicación: URL si existe, si no los primeros 100 chars del texto."""
+    url = (pub.get("url") or "").strip()
+    if url and url.startswith("http"):
+        return url.lower()
+    return (pub.get("texto") or "").strip().lower()[:100]
+
+def _fingerprints_existentes() -> set:
+    """Devuelve el conjunto de fingerprints de todas las publicaciones ya guardadas."""
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT datos FROM envios")
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+    fps = set()
+    for row in rows:
+        try:
+            d = json.loads(row["datos"])
+            for pubs in d.values():
+                for pub in pubs:
+                    fp = _pub_fingerprint(pub)
+                    if fp:
+                        fps.add(fp)
+        except Exception:
+            pass
+    return fps
+
 @app.route("/enviar", methods=["POST"])
 def enviar():
     body = request.get_json(force=True, silent=True) or {}
@@ -419,6 +448,7 @@ def enviar():
     fb_cuenta = meta.get("fb_cuenta", "")
     ig_cuenta = meta.get("ig_cuenta", "")
     sla       = json.dumps(meta.get("sla", {}))
+    forzar    = body.get("_forzar", False)
     datos_raw = {
         "twitter":   body.get("twitter",   []),
         "facebook":  body.get("facebook",  []),
@@ -427,6 +457,24 @@ def enviar():
         "tiktok":    body.get("tiktok",    []),
         "youtube":   body.get("youtube",   []),
     }
+
+    # ── Detección de duplicados (omitir si el usuario forzó el envío)
+    if not forzar:
+        existentes = _fingerprints_existentes()
+        duplicados = []
+        for plat, pubs in datos_raw.items():
+            for pub in pubs:
+                fp = _pub_fingerprint(pub)
+                if fp and fp in existentes:
+                    label = pub.get("url") or (pub.get("texto", "")[:60] + "…")
+                    duplicados.append({"plataforma": plat, "label": label})
+        if duplicados:
+            return jsonify({
+                "ok":        False,
+                "duplicados": duplicados,
+                "mensaje":   f"⚠️ {len(duplicados)} publicación(es) ya fueron registradas anteriormente.",
+            }), 409
+
     datos_str = json.dumps(reprocesar_emociones(datos_raw), ensure_ascii=False)
     conn = get_db()
     try:
@@ -813,8 +861,8 @@ def api_dashboard():
                         em      = c.get("emocion", "Neutro")
                         temas[tema_c] = temas.get(tema_c, 0) + 1
                         sent[em]      = sent.get(em, 0) + 1
-                        # Mensajes por sentimiento (max 15 por categoría)
-                        if len(sent_msgs.get(em, [])) < 15:
+                        # Mensajes por sentimiento (max 20 por categoría)
+                        if len(sent_msgs.get(em, [])) < 20:
                             sent_msgs.setdefault(em, []).append({
                                 "usuario":    c.get("usuario", "Usuario"),
                                 "texto":      c.get("texto", ""),
@@ -822,6 +870,8 @@ def api_dashboard():
                                 "fecha":      c.get("fecha", "")[:10] if c.get("fecha") else "",
                                 "respondido": c.get("respondido", False),
                                 "texto_resp": c.get("texto_respuesta", "") or "",
+                                "pub_url":    pub.get("url", ""),
+                                "pub_texto":  pub.get("texto", "")[:70],
                             })
                         # Detalle por tema
                         if tema_c not in temas_detalle:

@@ -447,20 +447,31 @@ function showMsg(txt,ok){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+async function _doEnviar(forzar=false){
+  const payload=buildPayload();
+  if(forzar) payload._forzar=true;
+  const r=await fetch('/enviar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const d=await r.json();
+  if(r.status===409 && d.duplicados){
+    // Mostrar modal de advertencia
+    const lista=d.duplicados.map(x=>`<li style="margin-bottom:4px;font-size:12px"><strong>[${x.plataforma}]</strong> ${x.label}</li>`).join('');
+    const conf=confirm(`⚠️ Publicaciones duplicadas detectadas:\n\n${d.duplicados.map(x=>`[${x.plataforma}] ${x.label}`).join('\n')}\n\nEstas publicaciones ya fueron registradas anteriormente.\n¿Deseas guardarlas igualmente?`);
+    if(conf) await _doEnviar(true);
+    return;
+  }
+  if(d.ok){
+    showMsg('✅ '+d.mensaje+' El administrador puede generar el reporte cuando todos hayan enviado.',true);
+    data=Object.fromEntries(Object.keys(PLATS).map(p=>[p,[]]));
+    cnt=Object.fromEntries(Object.keys(PLATS).map(p=>[p,0]));
+    renderPubs();
+  } else showMsg('❌ '+d.mensaje,false);
+}
+
 async function enviar(){
   const total=Object.values(data).reduce((s,arr)=>s+arr.length,0);
   if(total===0){showMsg('⚠️ No hay publicaciones ingresadas.',false);return;}
-  const payload=buildPayload();
-  try{
-    const r=await fetch('/enviar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    const d=await r.json();
-    if(d.ok){
-      showMsg('✅ '+d.mensaje+' El administrador puede generar el reporte cuando todos hayan enviado.',true);
-      data=Object.fromEntries(Object.keys(PLATS).map(p=>[p,[]]));
-      cnt=Object.fromEntries(Object.keys(PLATS).map(p=>[p,0]));
-      renderPubs();
-    } else showMsg('❌ '+d.mensaje,false);
-  } catch(e){showMsg('❌ Error de conexión: '+e.message,false);}
+  try{ await _doEnviar(); }
+  catch(e){showMsg('❌ Error de conexión: '+e.message,false);}
 }
 
 // Inicializar tab activo con color
