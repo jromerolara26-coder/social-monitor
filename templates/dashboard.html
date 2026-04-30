@@ -590,15 +590,12 @@ function renderDashboard(data){
 
     <div id="sec-temas" class="section">
       <div class="section-title">🏷️ Análisis de Impacto — Temas</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-        <div class="chart-card">
-          <h3>Volumen de menciones por tema</h3>
-          <div class="chart-wrap-tall"><canvas id="chart-temas"></canvas></div>
-        </div>
-        <div class="chart-card" style="overflow-y:auto;max-height:360px">
-          <h3>Detalle por tema</h3>
-          ${buildTemasDetalle(data.temas_detalle||{}, data.temas||{})}
-        </div>
+      <div class="chart-card" style="margin-bottom:20px">
+        <h3>Volumen de menciones por tema</h3>
+        <div style="position:relative;height:220px"><canvas id="chart-temas"></canvas></div>
+      </div>
+      <div id="temas-detalle-wrap">
+        ${buildTemasDetalle(data.temas_detalle||{}, data.temas||{})}
       </div>
     </div>
 
@@ -683,45 +680,87 @@ function cargar(){
 }
 
 function buildTemasDetalle(det, temas){
+  // Fallback: si no hay temas_detalle pero sí temas simples
   const entries = Object.entries(det).sort((a,b)=>b[1].count-a[1].count);
   if(!entries.length){
-    const fallback = Object.entries(temas).sort((a,b)=>b[1]-a[1]).slice(0,8);
-    if(!fallback.length) return '<p style="color:#aaa;font-size:13px">Sin datos de temas</p>';
-    return fallback.map(([tema,n])=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0">
-        <span style="font-size:13px;font-weight:600;color:#333">${tema}</span>
-        <span style="background:#eff6ff;color:#1d4ed8;font-weight:700;font-size:12px;padding:2px 10px;border-radius:20px">${n}</span>
-      </div>`).join('');
+    const fallback = Object.entries(temas).sort((a,b)=>b[1]-a[1]).slice(0,12);
+    if(!fallback.length) return '<div class="empty-state" style="padding:30px"><div class="ico">🏷️</div><p>Sin datos de temas aún</p></div>';
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+      ${fallback.map(([tema,n])=>`
+        <div style="background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.06);border:1px solid #eef2f7;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;font-weight:600;color:#1a2340">${tema}</span>
+          <span style="background:#eff6ff;color:#1d4ed8;font-weight:800;font-size:13px;padding:3px 12px;border-radius:20px">${n}</span>
+        </div>`).join('')}
+    </div>`;
   }
-  return entries.slice(0,10).map(([tema,d])=>{
-    const tot = d.count||1;
-    const sentBar = Object.entries(d.sent).filter(([,v])=>v>0).map(([tipo,val])=>
-      `<div style="height:100%;width:${(val/tot*100).toFixed(0)}%;background:${SENT_COLORS[tipo]||'#ccc'}" title="${tipo}: ${val}"></div>`
+
+  const totalGlobal = entries.reduce((a,[,d])=>a+d.count,0);
+
+  return entries.map(([tema,d])=>{
+    const tot      = d.count||1;
+    const respPct  = Math.round((d.respondidos||0)/tot*100);
+    const pctGlobal = totalGlobal>0 ? (tot/totalGlobal*100).toFixed(1) : 0;
+
+    // Barra de sentimiento
+    const sentBar = ['Crítico','Negativo','Positivo','Neutro'].filter(k=>d.sent[k]>0).map(k=>
+      `<div style="height:100%;width:${(d.sent[k]/tot*100).toFixed(0)}%;background:${SENT_COLORS[k]}" title="${k}: ${d.sent[k]}"></div>`
     ).join('');
-    const respPct = tot>0 ? Math.round(d.respondidos/tot*100) : 0;
-    const ejemplos = (d.ejemplos||[]).slice(0,2).map(e=>{
-      const lbl = PLAT_LABELS[e.plataforma]||e.plataforma||'';
-      const ec  = SENT_COLORS[e.emocion]||'#95a5a6';
-      return `<div style="background:#f8fafc;border-radius:6px;padding:7px 10px;margin-top:5px;border-left:3px solid ${ec}">
-        <div style="font-size:10px;color:#aaa;margin-bottom:2px">${lbl} · <span style="color:${ec};font-weight:700">${e.emocion}</span></div>
-        <div style="font-size:12px;color:#444;line-height:1.4">${(e.texto||'').slice(0,120)}${(e.texto||'').length>120?'…':''}</div>
+
+    // Chips de sentimiento
+    const sentChips = ['Crítico','Negativo','Positivo','Neutro'].filter(k=>d.sent[k]>0).map(k=>
+      `<span style="font-size:10px;background:${SENT_COLORS[k]}22;color:${SENT_COLORS[k]};padding:2px 8px;border-radius:10px;font-weight:700;border:1px solid ${SENT_COLORS[k]}44">${k}: ${d.sent[k]}</span>`
+    ).join('');
+
+    // Comentarios de ejemplo
+    const ejemplos = (d.ejemplos||[]).map((e,i)=>{
+      const lbl   = PLAT_LABELS[e.plataforma]||e.plataforma||'';
+      const ec    = SENT_COLORS[e.emocion]||'#95a5a6';
+      const pc    = PLAT_COLORS[e.plataforma]||'#1e7abf';
+      const user  = e.usuario ? `<strong style="color:#333">${e.usuario}</strong>` : '<em style="color:#aaa">Usuario desconocido</em>';
+      const link  = e.pub_url && e.pub_url.startsWith('http')
+        ? `<a href="${e.pub_url}" target="_blank" rel="noopener"
+             style="font-size:10px;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;padding:1px 8px;border-radius:10px;text-decoration:none;white-space:nowrap">🔗 Ver publicación</a>`
+        : '';
+      const pubTxt = e.pub_texto ? `<div style="font-size:10px;color:#999;margin-bottom:3px;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.pub_texto}">📌 ${e.pub_texto}${e.pub_texto.length>=60?'…':''}</div>` : '';
+      const resp  = e.respondido
+        ? `<div style="margin-top:5px;background:#f0fdf4;border-radius:5px;padding:5px 8px;font-size:11px;color:#15803d;border-left:3px solid #15803d"><strong>Respuesta ICETEX:</strong> ${(e.texto_resp||'').slice(0,100)}${(e.texto_resp||'').length>100?'…':''}</div>`
+        : '';
+      return `<div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:4px solid ${ec};margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-size:10px;background:${pc}18;color:${pc};padding:1px 7px;border-radius:10px;font-weight:700;border:1px solid ${pc}33">${lbl}</span>
+            ${user}
+            <span style="font-size:10px;color:${ec};font-weight:700;background:${ec}18;padding:1px 7px;border-radius:10px">${e.emocion}</span>
+            <span style="font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700;background:${e.respondido?'#dcfce7':'#fee2e2'};color:${e.respondido?'#15803d':'#dc2626'}">${e.respondido?'✅ Respondido':'❌ Sin respuesta'}</span>
+          </div>
+          ${link}
+        </div>
+        ${pubTxt}
+        <div style="font-size:12px;color:#444;line-height:1.5">${(e.texto||'(Sin texto)').slice(0,160)}${(e.texto||'').length>160?'…':''}</div>
+        ${resp}
       </div>`;
     }).join('');
-    return `<div style="padding:12px 0;border-bottom:1px solid #f0f4f8">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <span style="font-size:13px;font-weight:700;color:#1a2340">${tema}</span>
-        <div style="display:flex;gap:6px;align-items:center">
-          <span style="font-size:11px;color:#666">${d.count} comentarios</span>
-          <span style="font-size:10px;background:${respPct>=70?'#dcfce7':'#fee2e2'};color:${respPct>=70?'#15803d':'#dc2626'};padding:2px 7px;border-radius:10px;font-weight:700">${respPct}% resp.</span>
+
+    return `<div style="background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #eef2f7">
+      <!-- Cabecera del tema -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="background:#1e7abf;color:#fff;font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px">${tot} comentarios</div>
+          <span style="font-size:16px;font-weight:800;color:#1a2340">${tema}</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;color:#666">${pctGlobal}% del total</span>
+          <span style="font-size:11px;background:${respPct>=70?'#dcfce7':respPct>=40?'#fff7ed':'#fee2e2'};color:${respPct>=70?'#15803d':respPct>=40?'#c2410c':'#dc2626'};padding:3px 10px;border-radius:10px;font-weight:700;border:1px solid ${respPct>=70?'#bbf7d0':respPct>=40?'#fed7aa':'#fecaca'}">${respPct}% respondido</span>
         </div>
       </div>
-      <div style="height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;display:flex;gap:1px;margin-bottom:6px">${sentBar}</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">
-        ${Object.entries(d.sent).filter(([,v])=>v>0).map(([tipo,val])=>
-          `<span style="font-size:10px;background:${SENT_COLORS[tipo]}22;color:${SENT_COLORS[tipo]};padding:1px 7px;border-radius:10px;font-weight:700">${tipo}: ${val}</span>`
-        ).join('')}
+      <!-- Barra de sentimiento -->
+      <div style="height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;display:flex;margin-bottom:8px">${sentBar}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${sentChips}</div>
+      <!-- Comentarios -->
+      <div style="border-top:1px solid #f0f4f8;padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Comentarios relacionados</div>
+        ${ejemplos||'<div style="color:#aaa;font-size:12px;padding:8px 0">Sin comentarios de ejemplo</div>'}
       </div>
-      ${ejemplos}
     </div>`;
   }).join('');
 }

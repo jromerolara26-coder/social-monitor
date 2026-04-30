@@ -834,9 +834,16 @@ def api_dashboard():
                         temas_detalle[tema_c]["count"] += 1
                         temas_detalle[tema_c]["sent"][em] = temas_detalle[tema_c]["sent"].get(em, 0) + 1
                         if c.get("respondido"): temas_detalle[tema_c]["respondidos"] += 1
-                        if len(temas_detalle[tema_c]["ejemplos"]) < 3:
+                        if len(temas_detalle[tema_c]["ejemplos"]) < 5:
                             temas_detalle[tema_c]["ejemplos"].append({
-                                "texto": c.get("texto", ""), "emocion": em, "plataforma": plat
+                                "texto":      c.get("texto", ""),
+                                "emocion":    em,
+                                "plataforma": plat,
+                                "usuario":    c.get("usuario", ""),
+                                "pub_url":    pub.get("url", ""),
+                                "pub_texto":  pub.get("texto", "")[:60],
+                                "respondido": c.get("respondido", False),
+                                "texto_resp": c.get("texto_respuesta", "") or "",
                             })
         return plats, pubs_list, temas, sent, sent_msgs, temas_detalle
 
