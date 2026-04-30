@@ -362,44 +362,191 @@ function buildPost(p, tipo){
   </div>`;
 }
 
+let _sentMsgsData = {};
+
 function clickSentCard(cat){
-  if(window._sentUid) smTab(window._sentUid, cat);
-  const panel = document.getElementById('sent-msgs-panel');
-  if(panel) panel.scrollIntoView({behavior:'smooth', block:'start'});
+  const panel   = document.getElementById('sent-inline-panel');
+  const allCards = document.querySelectorAll('.sent-emoji-card');
+  const already  = window._sentCatSel === cat;
+
+  // Deselect all cards visually
+  allCards.forEach(c => {
+    const k = c.dataset.cat;
+    const [,color] = ({Positivo:'#dcfce7|#15803d',Negativo:'#fff7ed|#c2410c',Crítico:'#fee2e2|#dc2626',Neutro:'#f3f4f6|#4b5563'}[k]||'#f3f4f6|#aaa').split('|');
+    c.style.transform  = '';
+    c.style.boxShadow  = '';
+    c.style.borderColor = color+'44';
+  });
+
+  if(already){
+    // Collapse
+    window._sentCatSel = null;
+    panel.style.display = 'none';
+    return;
+  }
+
+  window._sentCatSel = cat;
+  const [bg,color] = ({Positivo:'#dcfce7|#15803d',Negativo:'#fff7ed|#c2410c',Crítico:'#fee2e2|#dc2626',Neutro:'#f3f4f6|#4b5563'}[cat]||'#f3f4f6|#aaa').split('|');
+
+  // Highlight selected card
+  const sel = document.querySelector(`.sent-emoji-card[data-cat="${cat}"]`);
+  if(sel){ sel.style.boxShadow=`0 0 0 3px ${color}`; sel.style.borderColor=color; }
+
+  // Render messages inline
+  const msgs = _sentMsgsData[cat]||[];
+  panel.innerHTML = buildSentInlinePanel(cat, color, msgs);
+  panel.style.display = 'block';
 }
 
-function buildSentResumen(sent){
-  const tot = Object.values(sent).reduce((a,b)=>a+b,0);
-  if(!tot) return '<div class="empty-state" style="padding:20px"><p>Sin datos de sentimiento aún.<br><a href="/formulario" class="btn-primary" style="margin-top:10px;display:inline-block">Ingresar datos</a></p></div>';
-  const pct  = v => (v/tot*100).toFixed(1);
+function buildSentInlinePanel(cat, color, msgs){
   const ICONS = {Positivo:'😊',Negativo:'😞',Crítico:'😡',Neutro:'😐'};
-  const COLORS = {Positivo:'#dcfce7|#15803d',Negativo:'#fff7ed|#c2410c',Crítico:'#fee2e2|#dc2626',Neutro:'#f3f4f6|#4b5563'};
-  const cards = ['Crítico','Negativo','Positivo','Neutro'].map(k=>{
-    const [bg,color] = COLORS[k].split('|');
-    const val = sent[k]||0;
-    return `<div onclick="clickSentCard('${k}')"
-      style="background:${bg};border-radius:14px;padding:18px 20px;text-align:center;
-             border:2px solid ${color}44;cursor:pointer;transition:all .2s;user-select:none"
-      onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px ${color}33'"
-      onmouseout="this.style.transform='';this.style.boxShadow=''">
-      <div style="font-size:32px;margin-bottom:8px">${ICONS[k]}</div>
-      <div style="font-size:26px;font-weight:900;color:${color}">${val}</div>
-      <div style="font-size:13px;font-weight:700;color:${color};margin-top:3px">${pct(val)}%</div>
-      <div style="font-size:12px;color:#555;margin-top:5px;font-weight:600">${k}</div>
-      <div style="font-size:10px;color:${color};margin-top:6px;opacity:.8">Ver comentarios →</div>
+  if(!msgs.length) return `<div style="background:#fff;border:2px solid ${color};border-top:none;border-radius:0 0 14px 14px;padding:24px;text-align:center;color:#aaa;font-size:13px">
+    No hay comentarios <strong>${cat}</strong> registrados en este período.
+  </div>`;
+  const rows = msgs.map(m=>{
+    const lbl = PLAT_LABELS[m.plataforma]||m.plataforma||'';
+    const pc  = PLAT_COLORS[m.plataforma]||'#1e7abf';
+    const link = m.pub_url && m.pub_url.startsWith('http')
+      ? `<a href="${m.pub_url}" target="_blank" rel="noopener"
+           style="font-size:10px;color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;
+                  padding:2px 9px;border-radius:10px;text-decoration:none;white-space:nowrap">🔗 Ver</a>` : '';
+    const pubBanner = m.pub_texto
+      ? `<div style="font-size:10px;color:#888;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+           <span style="color:${pc};font-weight:700">📌 ${lbl}:</span> ${m.pub_texto}${(m.pub_texto||'').length>=70?'…':''}
+         </div>` : '';
+    return `<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid #f5f5f5">
+      <div style="width:36px;height:36px;border-radius:50%;background:${pc};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">${(m.usuario||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        ${pubBanner}
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:700;color:#1a2340">${m.usuario||'Desconocido'}</span>
+          ${m.plataforma?`<span style="font-size:10px;background:${pc}18;color:${pc};padding:1px 7px;border-radius:10px;font-weight:700;border:1px solid ${pc}33">${lbl}</span>`:''}
+          ${m.fecha?`<span style="font-size:10px;color:#aaa">${m.fecha}</span>`:''}
+          ${link}
+        </div>
+        <div style="font-size:12px;color:#444;line-height:1.5">${m.texto||'(Sin texto)'}</div>
+        ${m.texto_resp?`<div style="margin-top:6px;background:#f7faff;border-left:3px solid #1e7abf;padding:6px 10px;border-radius:0 6px 6px 0;font-size:11px;color:#555">
+          <strong style="color:#1e7abf">Respuesta ICETEX:</strong> ${m.texto_resp}</div>`:''}
+      </div>
+      <span style="font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;flex-shrink:0;
+                   background:${m.respondido?'#dcfce7':'#fee2e2'};color:${m.respondido?'#15803d':'#dc2626'}">
+        ${m.respondido?'✅':'❌'}
+      </span>
     </div>`;
   }).join('');
-  const dominante = Object.entries(sent).reduce((a,b)=>b[1]>a[1]?b:a,['Neutro',0])[0];
-  const msgs = {
-    Positivo:'Los usuarios expresan satisfacción. ¡Buen trabajo en la atención!',
+  return `<div style="background:#fff;border:2px solid ${color};border-top:none;border-radius:0 0 14px 14px;overflow:hidden;max-height:420px;overflow-y:auto">
+    <div style="padding:10px 14px;background:${color}11;font-size:11px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid ${color}33">
+      ${ICONS[cat]||''} ${msgs.length} comentario${msgs.length!==1?'s':''} ${cat.toLowerCase()}${msgs.length>=20?' · mostrando top 20':''}
+    </div>
+    ${rows}
+  </div>`;
+}
+
+function buildSentResumen(sent, sentMsgs){
+  _sentMsgsData = sentMsgs || {};
+  const tot = Object.values(sent).reduce((a,b)=>a+b,0);
+  if(!tot) return '<div class="empty-state" style="padding:20px"><p>Sin datos de sentimiento aún.<br><a href="/formulario" class="btn-primary" style="margin-top:10px;display:inline-block">Ingresar datos</a></p></div>';
+  const pct  = v => tot>0?(v/tot*100).toFixed(1):0;
+  const ICONS  = {Positivo:'😊',Negativo:'😞',Crítico:'😡',Neutro:'😐'};
+  const COLORS = {Positivo:'#dcfce7|#15803d',Negativo:'#fff7ed|#c2410c',Crítico:'#fee2e2|#dc2626',Neutro:'#f3f4f6|#4b5563'};
+  const cats   = ['Crítico','Negativo','Positivo','Neutro'];
+  const cards  = cats.map(k=>{
+    const [bg,color] = COLORS[k].split('|');
+    const val = sent[k]||0;
+    const nMsgs = (sentMsgs[k]||[]).length;
+    return `<div class="sent-emoji-card" data-cat="${k}" onclick="clickSentCard('${k}')"
+      style="background:${bg};border-radius:14px;padding:20px 16px;text-align:center;
+             border:2px solid ${color}44;cursor:pointer;transition:all .2s;user-select:none;position:relative"
+      onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px ${color}44'"
+      onmouseout="if(window._sentCatSel!=='${k}'){this.style.transform='';this.style.boxShadow=''}">
+      <div style="font-size:36px;margin-bottom:10px">${ICONS[k]}</div>
+      <div style="font-size:28px;font-weight:900;color:${color};line-height:1">${val}</div>
+      <div style="font-size:13px;font-weight:700;color:${color};margin-top:4px">${pct(val)}%</div>
+      <div style="font-size:12px;color:#555;margin-top:6px;font-weight:600">${k}</div>
+      <div style="margin-top:10px;background:${color}18;border-radius:20px;padding:4px 10px;
+                  font-size:11px;font-weight:700;color:${color}">
+        ${nMsgs} usuario${nMsgs!==1?'s':''} · Ver →
+      </div>
+    </div>`;
+  }).join('');
+  // Panel que aparece inline al hacer clic
+  const inlinePanel = `<div id="sent-inline-panel" style="display:none;margin-top:-10px;margin-bottom:16px"></div>`;
+  const dominante = cats.reduce((a,k)=>(sent[k]||0)>(sent[a]||0)?k:a,'Neutro');
+  const diagMsgs  = {Positivo:'Los usuarios expresan satisfacción. ¡Buen trabajo en la atención!',
     Negativo:'Hay malestar en los comentarios. Revisar tiempos y calidad de respuesta.',
     Crítico:'Nivel crítico de inconformidad. Se recomienda activar protocolo de gestión.',
-    Neutro:'La mayoría de comentarios son informativos o consultas generales.',
-  };
-  return `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">${cards}</div>
-    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e3a5f">
-      <strong>📋 Diagnóstico:</strong> Sentimiento dominante: <strong>${dominante}</strong> (${pct(sent[dominante]||0)}% de ${tot} comentarios). ${msgs[dominante]}
+    Neutro:'La mayoría de comentarios son informativos o consultas generales.'};
+  return `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:4px">${cards}</div>
+    ${inlinePanel}
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;font-size:13px;color:#1e3a5f">
+      <strong>📋 Diagnóstico:</strong> Sentimiento dominante: <strong>${dominante}</strong> (${pct(sent[dominante]||0)}% de ${tot} comentarios). ${diagMsgs[dominante]}
     </div>`;
+}
+
+function buildRankingUsuarios(ranking){
+  if(!ranking||!ranking.length) return '<div style="color:#aaa;font-size:13px;padding:16px 0">Sin datos de usuarios para este período.</div>';
+  const emojis = {Positivo:'😊',Negativo:'😞',Crítico:'😡',Neutro:'😐'};
+  const rows = ranking.map((u,i)=>{
+    const tasa = u.tasa_resp||0;
+    const tasaColor = tasa>=80?'#15803d':tasa>=50?'#d97706':'#dc2626';
+    const tasaBg    = tasa>=80?'#dcfce7':tasa>=50?'#fef3c7':'#fee2e2';
+    const medalIcon = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="font-weight:800;color:#64748b">#${i+1}</span>`;
+    const plats = (u.plataformas||[]).map(p=>{
+      const pc = PLAT_COLORS[p]||'#1e7abf';
+      const pl = PLAT_LABELS[p]||p;
+      return `<span style="font-size:10px;background:${pc}18;color:${pc};padding:1px 6px;border-radius:8px;font-weight:700;border:1px solid ${pc}33">${pl}</span>`;
+    }).join('');
+    const barW = Math.min(100, Math.round(u.total / (ranking[0].total||1) * 100));
+    return `<tr style="border-bottom:1px solid #f0f4f8">
+      <td style="padding:10px 12px;text-align:center;font-size:18px">${medalIcon}</td>
+      <td style="padding:10px 12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1e7abf,#0a4b8c);
+                      color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            ${(u.usuario||'?')[0].toUpperCase()}
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:#1a2340">${u.usuario}</div>
+            <div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">${plats}</div>
+          </div>
+        </div>
+      </td>
+      <td style="padding:10px 12px;text-align:center">
+        <div style="font-size:18px;font-weight:800;color:#1a2340">${u.total}</div>
+        <div style="height:4px;background:#f0f0f0;border-radius:2px;margin-top:4px;width:60px;margin-inline:auto">
+          <div style="height:100%;width:${barW}%;background:#1e7abf;border-radius:2px"></div>
+        </div>
+      </td>
+      <td style="padding:10px 12px;text-align:center">
+        <span style="font-size:12px;font-weight:700;color:#15803d">✅ ${u.respondidos}</span>
+      </td>
+      <td style="padding:10px 12px;text-align:center">
+        <span style="font-size:12px;font-weight:700;color:${u.sin_resp>0?'#dc2626':'#aaa'}">❌ ${u.sin_resp}</span>
+      </td>
+      <td style="padding:10px 16px;text-align:center">
+        <span style="background:${tasaBg};color:${tasaColor};font-weight:800;font-size:12px;
+                     padding:4px 12px;border-radius:20px;display:inline-block">${tasa}%</span>
+      </td>
+      <td style="padding:10px 12px;text-align:center;font-size:18px">${emojis[u.emocion_dom]||'😐'}</td>
+    </tr>`;
+  }).join('');
+  return `<div style="background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.07);border:1px solid #eef2f7;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:linear-gradient(135deg,#1e3a5f,#1976d2);color:#fff">
+          <th style="padding:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;width:50px">Rank</th>
+          <th style="padding:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-align:left">Usuario</th>
+          <th style="padding:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Total comentarios</th>
+          <th style="padding:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Respondidos</th>
+          <th style="padding:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Sin respuesta</th>
+          <th style="padding:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Tasa resp.</th>
+          <th style="padding:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Sentimiento</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
 
 function buildSentBars(sent){
@@ -608,8 +755,8 @@ function renderDashboard(data){
 
     <div id="sec-sentimiento" class="section">
       <div class="section-title">😊 Análisis de Sentimiento</div>
-      ${buildSentResumen(data.sentimiento||{})}
-      <div class="sent-grid">
+      ${buildSentResumen(data.sentimiento||{}, data.sent_msgs||{})}
+      <div class="sent-grid" style="margin-top:20px">
         <div class="chart-card">
           <h3>Distribución global</h3>
           <div class="chart-wrap"><canvas id="chart-sent"></canvas></div>
@@ -619,10 +766,9 @@ function renderDashboard(data){
           <div class="sent-bars" style="padding-top:8px">${buildSentBars(data.sentimiento||{})}</div>
         </div>
       </div>
-      <div class="chart-card" style="margin-top:16px" id="sent-msgs-panel">
-        <h3>Mensajes por categoría de sentimiento</h3>
-        <p style="font-size:11px;color:#aaa;margin-bottom:12px">Haz clic en una tarjeta de arriba para filtrar por categoría</p>
-        ${buildSentMsgs(data.sent_msgs||{})}
+      <div style="margin-top:24px">
+        <div class="section-title" style="font-size:15px">👥 Ranking de Usuarios más Activos</div>
+        ${buildRankingUsuarios(data.ranking_usuarios||[])}
       </div>
     </div>
 

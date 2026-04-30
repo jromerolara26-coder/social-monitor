@@ -792,6 +792,7 @@ def api_dashboard():
         temas_detalle = {}
         sent  = {"Positivo": 0, "Negativo": 0, "Neutro": 0, "Crítico": 0}
         sent_msgs = {"Positivo": [], "Negativo": [], "Neutro": [], "Crítico": []}
+        ranking_usuarios = {}
         for row in filas:
             try:
                 d = json.loads(row["datos"])
@@ -873,6 +874,17 @@ def api_dashboard():
                                 "pub_url":    pub.get("url", ""),
                                 "pub_texto":  pub.get("texto", "")[:70],
                             })
+                        # Ranking de usuarios
+                        usr = c.get("usuario") or "Desconocido"
+                        if usr not in ranking_usuarios:
+                            ranking_usuarios[usr] = {"total": 0, "respondidos": 0,
+                                                     "plataformas": [], "emociones": []}
+                        ranking_usuarios[usr]["total"] += 1
+                        if c.get("respondido"):
+                            ranking_usuarios[usr]["respondidos"] += 1
+                        if plat not in ranking_usuarios[usr]["plataformas"]:
+                            ranking_usuarios[usr]["plataformas"].append(plat)
+                        ranking_usuarios[usr]["emociones"].append(em)
                         # Detalle por tema
                         if tema_c not in temas_detalle:
                             temas_detalle[tema_c] = {
@@ -895,7 +907,15 @@ def api_dashboard():
                                 "respondido": c.get("respondido", False),
                                 "texto_resp": c.get("texto_respuesta", "") or "",
                             })
-        return plats, pubs_list, temas, sent, sent_msgs, temas_detalle
+        ranking_list = sorted([
+            {"usuario": u, "total": d["total"], "respondidos": d["respondidos"],
+             "sin_resp": d["total"] - d["respondidos"],
+             "plataformas": d["plataformas"],
+             "tasa_resp": round(d["respondidos"] / d["total"] * 100) if d["total"] else 0,
+             "emocion_dom": max(set(d["emociones"]), key=d["emociones"].count) if d["emociones"] else "Neutro"}
+            for u, d in ranking_usuarios.items()
+        ], key=lambda x: x["total"], reverse=True)[:20]
+        return plats, pubs_list, temas, sent, sent_msgs, temas_detalle, ranking_list
 
     curr, prev = [], []
     for row in rows:
@@ -907,8 +927,8 @@ def api_dashboard():
         elif m is None:
             curr.append(row)
 
-    plats_c, pubs_c, temas_c, sent_c, sent_msgs_c, temas_det_c = extraer(curr)
-    plats_p, _, _, _, _, _                                     = extraer(prev)
+    plats_c, pubs_c, temas_c, sent_c, sent_msgs_c, temas_det_c, ranking_c = extraer(curr)
+    plats_p, _, _, _, _, _, _                                              = extraer(prev)
 
     plataformas = {}
     for plat, st in plats_c.items():
@@ -1052,6 +1072,7 @@ def api_dashboard():
         "temas_detalle":     temas_det_c,
         "sentimiento":       sent_c,
         "sent_msgs":         sent_msgs_c,
+        "ranking_usuarios":  ranking_c,
         "conclusiones":      conclusiones,
         "metricas_avanzadas":metricas_avanzadas,
         "recomendaciones":   recomendaciones,
