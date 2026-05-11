@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import json, os, sys, subprocess, socket
+import json, os, sys, subprocess, socket, re
 import psycopg2
 import psycopg2.extras
 from datetime import datetime
@@ -146,6 +146,20 @@ def generar_conclusiones(plataformas, sentimiento, temas):
     return conclusiones
 
 # ── Detección de sentimiento server-side
+_NEGACIONES_ES = frozenset({
+    "no","nunca","jamás","jamas","tampoco","ni","ningún","ningun","ninguna",
+    "nada","nadie","sin","imposible","difícil","dificil","apenas","todavía","todavia",
+})
+
+_EMOJIS_NEG = set("😡🤬😤👎😠😞😢😭😩😫💔🙄😑😒🤦🤷")
+_EMOJIS_POS = set("❤😊😍🥰👍🙌🎉✅💯😃😄🤩🥳💪⭐🌟✨🙏")
+
+def _norm_texto(texto: str) -> str:
+    """Normaliza para comparación: minúsculas, sin puntuación, con espacios límite."""
+    t = (texto or "").lower()
+    t = re.sub(r"[^\w]", " ", t)
+    return " " + re.sub(r"\s+", " ", t).strip() + " "
+
 _EMOCIONES = {
     "Crítico": [
         "queja","reclamo","denuncia","tutela","demanda","acción legal","accion legal",
@@ -167,6 +181,16 @@ _EMOCIONES = {
         "paguen el subsidio","paguen el dinero","no pagan","siguen sin pagar",
         "proceso fallido","burocracia excesiva","trabas burocráticas","trabas burocraticas",
         "sin como estudiar","sin poder estudiar",
+        "ladrón","ladron","sinvergüenza","sinverguenza","sinvergüenzas","sinverguenzas",
+        "deberían cerrar","deberian cerrar","entidad corrupta","inútiles","inutiles",
+        "no sirven para nada","para qué existen","para que existen",
+        "roban a los estudiantes","roban a la gente","se roban la plata",
+        "cómo es posible esto","como es posible esto",
+        "denunciaré","denunciare","los voy a denunciar","les voy a poner queja",
+        "acudiré","acudire a","buscaré un abogado","buscare un abogado",
+        "reportaré esto","reportare esto","escalaré el caso","escalare el caso",
+        "no les importamos","nos tienen abandonados","nos tienen de último","nos tienen de ultimo",
+        "vergüenza de entidad","verguenza de entidad","esto no puede seguir así","esto no puede seguir asi",
     ],
     "Negativo": [
         "malo","mala","mal ","terrible","pésimo","pesimo","horrible","fatal","deficiente",
@@ -195,6 +219,22 @@ _EMOCIONES = {
         "no es claro","no es clara","cambian los requisitos","cambian las reglas",
         "portal caído","portal caido","sistema caído","sistema caido","error en el sistema",
         "no puedo ingresar","no puedo acceder","no me deja","me bloquea",
+        "desastre","un desastre","pesadilla","una pesadilla","ridículo","ridiculo",
+        "ridícula","ridicula","caos","un caos","es un caos","qué caos","que caos",
+        "pésima gestión","pesima gestion","mala gestión","mala gestion",
+        "pésima experiencia","pesima experiencia","muy mala experiencia","mala experiencia",
+        "sin noticias","no me contactaron","nunca me llamaron","no me notificaron",
+        "imposible comunicarse","imposible contactarlos","imposible hablar con alguien",
+        "me tienen esperando","nos tienen esperando","llevo días esperando","llevamos semanas",
+        "llevamos meses","hace más de un mes","hace mas de un mes",
+        "siguen sin responder","sigo sin respuesta","sigo sin solución","sigo sin solucion",
+        "da error","da errores","falla constantemente","siempre falla",
+        "nadie da información","nadie da informacion","sin información clara","sin claridad",
+        "tanta demora","demasiada demora","muy deficiente","totalmente deficiente",
+        "no cumplieron","no han cumplido","incumplieron","prometieron y no cumplieron",
+        "qué asco","que asco de servicio","qué desastre","que desastre",
+        "no funciona nada","todo está mal","todo esta mal","nada funciona",
+        "me dejaron solo","me dejaron sola","sin acompañamiento","sin apoyo",
     ],
     "Positivo": [
         "gracias","muchas gracias","mil gracias","infinitas gracias",
@@ -222,11 +262,40 @@ _EMOCIONES = {
 }
 
 def detectar_emocion_srv(texto: str) -> str:
-    t = (texto or "").lower()
-    conteos = {}
+    if not texto or not texto.strip():
+        return "Neutro"
+
+    t_norm = _norm_texto(texto)
+    conteos = {"Crítico": 0.0, "Negativo": 0.0, "Positivo": 0.0}
+
+    # Emojis en texto original (no se normalizan)
+    for ch in texto:
+        if ch in _EMOJIS_NEG:
+            conteos["Negativo"] += 1.5
+        elif ch in _EMOJIS_POS:
+            conteos["Positivo"] += 1.5
+
     for em in ["Crítico", "Negativo", "Positivo"]:
-        conteos[em] = sum(1 for p in _EMOCIONES[em] if p in t)
-    conteos["Crítico"] *= 2  # peso doble para casos graves
+        for frase in _EMOCIONES[em]:
+            f_norm = _norm_texto(frase).strip()
+            if not f_norm or f_norm not in t_norm:
+                continue
+            # Frases más largas = mayor peso (más específicas y confiables)
+            peso = max(1, len(f_norm.split()))
+            if em == "Positivo":
+                # Si hay una negación justo antes del término positivo, se invierte a Negativo
+                idx = t_norm.find(f_norm)
+                ctx = t_norm[max(0, idx - 35): idx]
+                if frozenset(ctx.split()) & _NEGACIONES_ES:
+                    conteos["Negativo"] += peso
+                else:
+                    conteos["Positivo"] += peso
+            else:
+                conteos[em] += peso
+
+    # Crítico recibe triple peso (casos graves deben prevalecer)
+    conteos["Crítico"] *= 3
+
     mejor = max(conteos, key=conteos.get)
     return mejor if conteos[mejor] > 0 else "Neutro"
 
