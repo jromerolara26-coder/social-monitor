@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import json, os, sys, subprocess, socket, re
+import json, os, sys, subprocess, socket, re, unicodedata
 import psycopg2
 import psycopg2.extras
 from datetime import datetime
@@ -146,6 +146,14 @@ def generar_conclusiones(plataformas, sentimiento, temas):
     return conclusiones
 
 # ── Detección de sentimiento server-side
+# Patrones regex para tiempo de espera con números ("llevo 3 semanas", "hace 6 meses", etc.)
+_PATRONES_ESPERA = [
+    re.compile(r"llevo\s+\d+\s*(d[íi]as?|semanas?|meses?|a[ñn]os?)", re.IGNORECASE),
+    re.compile(r"hace\s+\d+\s*(d[íi]as?|semanas?|meses?|a[ñn]os?)", re.IGNORECASE),
+    re.compile(r"\d+\s*(d[íi]as?|semanas?|meses?|a[ñn]os?)\s+(esperando|sin\s+respuesta|sin\s+soluci)", re.IGNORECASE),
+    re.compile(r"desde\s+hace\s+\d+", re.IGNORECASE),
+]
+
 _NEGACIONES_ES = frozenset({
     "no","nunca","jamás","jamas","tampoco","ni","ningún","ningun","ninguna",
     "nada","nadie","sin","imposible","difícil","dificil","apenas","todavía","todavia",
@@ -155,8 +163,11 @@ _EMOJIS_NEG = set("😡🤬😤👎😠😞😢😭😩😫💔🙄😑😒🤦�
 _EMOJIS_POS = set("❤😊😍🥰👍🙌🎉✅💯😃😄🤩🥳💪⭐🌟✨🙏")
 
 def _norm_texto(texto: str) -> str:
-    """Normaliza para comparación: minúsculas, sin puntuación, con espacios límite."""
+    """Normaliza para comparación: minúsculas, sin tildes, sin puntuación, con espacios límite."""
     t = (texto or "").lower()
+    # Eliminar tildes/diacríticos: café→cafe, caído→caido, ñ→n, etc.
+    t = unicodedata.normalize("NFD", t)
+    t = "".join(c for c in t if unicodedata.category(c) != "Mn")
     t = re.sub(r"[^\w]", " ", t)
     return " " + re.sub(r"\s+", " ", t).strip() + " "
 
@@ -205,9 +216,11 @@ _EMOCIONES = {
         "ignorando","ignorado","ignorada","abandonado","abandonada","olvidado","olvidada",
         "no me atienden","no me ayudan","no me solucionan","no dan razón","no dan razon",
         "no dan información","no dan informacion","no explican",
-        "demora","demorado","retraso","retrasado","tardanza","lento","lenta",
-        "hace días","hace dias","hace semanas","hace meses","hace un año",
-        "llevo esperando","sigo esperando","aún no","aun no","todavía no","todavia no",
+        "demorado","retraso","retrasado","tardanza","lento","lenta",
+        "mucha demora","tanta demora","la demora","hay demora","con demora",
+        "hace días","hace dias","hace semanas","hace meses","hace un año","hace un mes",
+        "llevo esperando","llevo dias","llevo semanas","llevo meses","llevo un mes",
+        "sigo esperando","aún no","aun no","todavía no","todavia no",
         "sin novedad","sin solución","sin solucion","semanas sin","meses sin",
         "bloqueado","bloqueada","suspendido","suspendida","cancelado","cancelada",
         "rechazado","rechazada","negado","negada","no han desembolsado","no llegó","no llego",
@@ -235,6 +248,13 @@ _EMOCIONES = {
         "qué asco","que asco de servicio","qué desastre","que desastre",
         "no funciona nada","todo está mal","todo esta mal","nada funciona",
         "me dejaron solo","me dejaron sola","sin acompañamiento","sin apoyo",
+        "no hay respuesta","no tengo respuesta","sin obtener respuesta","no he recibido respuesta",
+        "no me respondieron","aun sin respuesta","sin respuesta alguna",
+        "perdi la beca","perdí la beca","perdi el beneficio","perdí el beneficio",
+        "no me notifico","no me notificó","no nos notificaron","sin notificarme",
+        "no puedo pagar","no pude pagar","no me deja pagar","no me dejan pagar",
+        "hace 1 mes","hace 2 meses","hace 3 meses","hace 4 meses","hace 5 meses","hace 6 meses",
+        "hace varios meses","hace bastante tiempo","desde hace meses","desde hace semanas",
     ],
     "Positivo": [
         "gracias","muchas gracias","mil gracias","infinitas gracias",
@@ -256,8 +276,10 @@ _EMOCIONES = {
         "bien explicado","muy claro","muy clara",
         "me aprobaron","me desembolsaron","recibí el dinero","recibi el dinero",
         "llegó el desembolso","llego el desembolso","recibí el subsidio","recibi el subsidio",
+        "recibí el desembolso","recibi el desembolso","recibí la beca","recibi la beca",
         "llegó la beca","llego la beca","me renovaron","me legalizaron","proceso exitoso",
-        "sin complicaciones","me apoyaron","me asesoraron bien",
+        "sin complicaciones","me apoyaron","me asesoraron bien","fue aprobado","fue aprobada",
+        "desembolsaron","el desembolso llegó","el desembolso llego",
     ],
 }
 
@@ -268,6 +290,12 @@ def detectar_emocion_srv(texto: str) -> str:
     t_norm = _norm_texto(texto)
     conteos = {"Crítico": 0.0, "Negativo": 0.0, "Positivo": 0.0}
 
+    # Patrones de tiempo de espera con números ("llevo 3 semanas", "hace 6 meses", etc.)
+    for patron in _PATRONES_ESPERA:
+        if patron.search(texto):
+            conteos["Negativo"] += 3
+            break
+
     # Emojis en texto original (no se normalizan)
     for ch in texto:
         if ch in _EMOJIS_NEG:
@@ -277,11 +305,11 @@ def detectar_emocion_srv(texto: str) -> str:
 
     for em in ["Crítico", "Negativo", "Positivo"]:
         for frase in _EMOCIONES[em]:
-            f_norm = _norm_texto(frase).strip()
-            if not f_norm or f_norm not in t_norm:
+            f_norm = _norm_texto(frase)         # conservar espacios límite para word-boundary
+            if not f_norm.strip() or f_norm not in t_norm:
                 continue
             # Frases más largas = mayor peso (más específicas y confiables)
-            peso = max(1, len(f_norm.split()))
+            peso = max(1, len(f_norm.strip().split()))
             if em == "Positivo":
                 # Si hay una negación justo antes del término positivo, se invierte a Negativo
                 idx = t_norm.find(f_norm)
